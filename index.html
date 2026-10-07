@@ -1,0 +1,3001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="description" content="γ-Art: Zero-Shot Sim-to-Real Articulated Object Manipulation via Large-Scale Synthetic Pretraining" />
+  <meta name="author" content="TeleAI, Institute of Artificial Intelligence, China Telecom" />
+  <title>γ-Art — Large-Scale Synthetic Pretraining</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --page-max: 1200px;
+      --page-pad: 24px;
+      --blue: #3b82f6;
+      --gamma-purple: #611c87;
+      --navy: #0f172a;
+      --bg-light: #faf8f5;
+      --bg-white: #fff;
+      --text-main: #1a1a1a;
+      --text-sub: #555;
+      --border: #e8e8e8;
+    }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      margin: 0;
+      font-family: 'IBM Plex Sans', 'Google Sans', Arial, sans-serif;
+      color: var(--text-main);
+      background: var(--bg-light);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ─── NAVIGATION ─────────────────────────────────────── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: linear-gradient(180deg, #020305f5 0%, #070a0fdf 52%, #0b0e1499 100%);
+      border-bottom: 0;
+      transition: background .35s, border-color .35s, box-shadow .35s, backdrop-filter .35s;
+    }
+    .nav.scrolled {
+      backdrop-filter: saturate(180%) blur(12px);
+      -webkit-backdrop-filter: saturate(180%) blur(12px);
+      background: linear-gradient(180deg, #020305f5 0%, #070a0fe8 52%, #0b0e14c7 100%);
+      border-bottom: 0;
+      box-shadow: 0 10px 30px #00000040;
+    }
+    .nav-shell {
+      width: 100%; max-width: var(--page-max);
+      padding: 0 var(--page-pad); margin: 0 auto;
+    }
+    .nav-main-row {
+      display: flex; justify-content: center; align-items: center;
+      min-height: 48px; padding: 10px 12px 11px;
+      border-bottom: 0;
+      flex-wrap: nowrap; gap: 0; width: 100%; position: relative;
+    }
+    .nav-brand {
+      position: absolute; left: var(--page-pad); top: 50%; transform: translateY(-50%);
+      z-index: 2; display: flex; align-items: baseline; gap: 10px; flex-shrink: 0;
+    }
+    .nav-brand-title {
+      color: #fff; font-size: 38px; font-weight: 800; letter-spacing: -.03em;
+      text-shadow: 0 1px 4px #00000073; transition: color .25s, opacity .25s;
+    }
+    /* Lift the descender of the gamma so the mark aligns visually with Art. */
+    .brand-gamma {
+      display: inline-block; color: var(--gamma-purple); transform: translateY(-.1em);
+    }
+    .nav.scrolled .nav-brand-title { color: #fff; text-shadow: 0 1px 4px #00000073; }
+    .nav-brand-title:hover { opacity: .85; }
+    .nav-chapters {
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+      gap: 8px 14px; flex: auto; min-width: 0; padding: 0;
+    }
+    .nav-link {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 9px 18px 11px; border-radius: 8px;
+      color: #ffffffeb; font-size: 17px; font-weight: 600;
+      letter-spacing: .01em; text-shadow: 0 1px 3px #00000059;
+      transition: color .2s, background .2s; position: relative;
+    }
+    .nav-link::after {
+      content: ''; position: absolute; bottom: 5px; left: 12px; right: 12px;
+      height: 2px; border-radius: 2px; background: transparent; transition: background .2s;
+    }
+    .nav-link:hover { color: #fff; background: #ffffff14; }
+    .nav.scrolled .nav-link { color: #ffffffeb; text-shadow: 0 1px 3px #00000059; }
+    .nav.scrolled .nav-link:hover { color: #fff; background: #ffffff14; }
+    .nav-link.active { color: #fff; }
+    .nav-link.active::after { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+    .nav.scrolled .nav-link.active { color: #fff; }
+    .nav.scrolled .nav-link.active::after { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+    .nav-num {
+      color: #ffffff9e; font-size: 13px; font-weight: 700; letter-spacing: .08em;
+    }
+    .nav.scrolled .nav-num { color: #94a3b8; }
+    .nav-link.active .nav-num { color: #bfdbfef2; }
+    .nav.scrolled .nav-link.active .nav-num { color: var(--blue); }
+    .nav-toggle {
+      display: none; position: absolute; top: 50%; right: 0; transform: translateY(-50%);
+      background: #0f172a40; border: 1px solid #ffffff59; border-radius: 4px;
+      width: 38px; height: 38px; flex-direction: column; justify-content: center;
+      gap: 4px; padding: 0; cursor: pointer; transition: background .2s, border-color .2s;
+    }
+    .nav-toggle:hover { background: #0f172a66; }
+    .nav.scrolled .nav-toggle { background: #0f172a66; border-color: #ffffff59; }
+    .nav-bar { display: block; width: 18px; height: 2px; margin: 0 auto; background: #f8fafc; border-radius: 1px; }
+    .nav.scrolled .nav-bar { background: #f8fafc; }
+    .nav-spacer { height: 0; }
+
+    /* ─── HERO ───────────────────────────────────────────── */
+    .hero {
+      position: relative; display: flex; justify-content: center; align-items: center;
+      text-align: center; background: #000;
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      min-height: 88vh; padding: 120px 0 100px; overflow: hidden;
+    }
+    .hero-video-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+    }
+    .hero-video {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 100%; height: 100%; object-fit: cover; opacity: .6;
+      transition: opacity .45s ease;
+    }
+    .hero-video.is-switching { opacity: 0; }
+    .hero-overlay {
+      position: absolute; inset: 0; z-index: 1; background: #00000066;
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      width: 100%; max-width: var(--page-max);
+      padding: 0 var(--page-pad); margin: 0 auto;
+    }
+    .hero-inner { max-width: var(--page-max); margin: 0 auto; }
+    .hero-title {
+      color: #fff; font-size: 93.6px; font-weight: 800; letter-spacing: -.02em;
+      text-shadow: 0 4px 16px #00000073; margin: 0 auto 20px; line-height: 1.05;
+    }
+    .hero-subtitle {
+      color: #ffffffd1; font-size: 24px; font-weight: 400; letter-spacing: .01em;
+      text-shadow: 0 2px 6px #00000059; margin: 0 auto 52px; line-height: 1.5;
+      max-width: 820px;
+    }
+    .hero-buttons {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 22px; width: 100%; max-width: 400px;
+      margin: 0 auto 52px;
+    }
+    .hero-btn {
+      display: inline-flex; justify-content: center; align-items: center;
+      gap: 11px; min-height: 54px; padding: 12px 16px;
+      box-sizing: border-box; width: 100%;
+      color: #fff; font-size: 17px; font-weight: 600; letter-spacing: .01em;
+      background: #ffffff1f; border: 1px solid #ffffff47; border-radius: 10px;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      text-decoration: none;
+      transition: transform .38s cubic-bezier(.22,1,.36,1),
+                  box-shadow .38s cubic-bezier(.22,1,.36,1),
+                  background .25s, border-color .25s, filter .25s;
+      transform: translateY(0) scale(1);
+      box-shadow: 0 3px 12px #00000029;
+    }
+    .hero-btn:hover {
+      filter: brightness(1.06); background: #ffffff3d; border-color: #ffffff85;
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 18px 40px #00000052, 0 6px 14px #0000002e;
+    }
+    .hero-btn.is-coming-soon { cursor: default; }
+    .hero-btn.is-coming-soon:hover {
+      filter: none; background: #ffffff1f; border-color: #ffffff47;
+      transform: none; box-shadow: 0 3px 12px #00000029;
+    }
+    .hero-btn:active { transition-duration: .12s; transform: translateY(-3px) scale(1.01); }
+    .hero-btn.is-coming-soon:active { transform: none; }
+    .btn-icon { flex-shrink: 0; width: 22px; height: 22px; }
+    .coming-soon { color: #94a3b8; font-size: 12px; font-weight: 500; letter-spacing: .5px; }
+    .hero-logo-row {
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+      gap: 12px; margin-top: 0;
+    }
+    .hero-logo {
+      display: inline-flex; justify-content: center; align-items: center;
+      width: min(292px, calc(100% - 32px)); background: #fffffff0; border-radius: 8px;
+      padding: 7px 12px;
+    }
+    .hero-logo.gamma-robotics { width: min(292px, calc(100% - 32px)); padding: 7px 12px; }
+    .hero-logo img { width: 100%; height: auto; opacity: 1; transition: opacity .2s; }
+    .hero-logo.gamma-robotics img { width: 100%; height: 52px; object-fit: contain; }
+    .hero-logo img:hover { opacity: .8; }
+
+    /* ─── PAPER INFO / ABSTRACT ──────────────────────────── */
+    .paper-info {
+      background: var(--bg-light); border-bottom: 1px solid #e5e7eb;
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      padding: 50px 0;
+    }
+    .paper-info-inner {
+      max-width: var(--page-max); margin: 0 auto;
+      padding: 0 var(--page-pad); text-align: center;
+    }
+    .paper-title-row {
+      display: flex; justify-content: center; align-items: center;
+      gap: 20px; max-width: 100%; margin: 0 auto 24px;
+    }
+    .paper-title {
+      color: #363636; text-align: left; width: 100%; min-width: 0; max-width: 1120px; margin: 0;
+      font-size: 44px; font-weight: 700; line-height: 1.2;
+    }
+    .authors-list {
+      color: #212529; font-size: 20px; line-height: 1.5; margin-bottom: 8px;
+    }
+    .author-name {
+      display: inline-block; color: #3d97e8; margin: 0 12px; font-weight: 400;
+    }
+    .author-name sup { color: #212529; font-size: 13px; margin-left: 1px; }
+    .affiliations {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 28px;
+      color: #212529; font-size: 18px; line-height: 1.6; margin-bottom: 8px;
+    }
+    .affil-row { margin: 0; }
+    .affil-row sup { font-size: 13px; margin-right: 1px; }
+    .corr-note {
+      color: #212529; font-size: 18px; margin-bottom: 40px;
+    }
+    .corr-note sup { font-size: 13px; margin-right: 1px; }
+    .author-logos {
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+      gap: 18px; margin: -16px auto 32px; padding: 0 12px;
+    }
+    .author-logo { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; }
+    .author-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .author-logo.teleai img { width: 62px; height: 62px; }
+    .author-logo.gamma-robotics { width: 180px; }
+    .author-logo.gamma-robotics img { width: 168px; height: 62px; object-fit: contain; }
+    .author-logo.tum img { width: 84px; height: 48px; }
+    .author-logo.hit img { width: 74px; height: 74px; }
+    .resource-links {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;
+    }
+    .resource-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 8px; color: #374151; font-size: 14px; font-weight: 500;
+      text-decoration: none; transition: all .2s;
+      box-shadow: 0 1px 3px #0000000d;
+    }
+    .resource-link:hover {
+      color: var(--blue); border-color: var(--blue);
+      transform: translateY(-1px); box-shadow: 0 4px 12px #3b82f626;
+    }
+    .resource-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* ─── SECTION COMMONS ────────────────────────────────── */
+    .section-eyebrow {
+      color: #666; font-size: 13px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .section-title {
+      color: var(--text-main); font-size: 62.4px; font-weight: 700;
+      letter-spacing: -.5px; text-align: center; line-height: 1.2;
+      margin: 0 0 16px;
+    }
+    .overview-title { font-size: 48px; }
+    .title-gamma {
+      display: inline-block; color: var(--gamma-purple); transform: translateY(-.18em);
+    }
+    .subsection-title {
+      color: var(--text-main); font-size: 28px; font-weight: 600;
+      text-align: center; margin: 40px 0 20px;
+    }
+    .subsection-title:first-child { margin-top: 0; }
+
+    /* ─── ABSTRACT (OVERVIEW) ────────────────────────────── */
+    .overview-section {
+      background: #fff; border-bottom: 1px solid var(--border);
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      padding: 80px 0;
+    }
+    .overview-inner {
+      max-width: var(--page-max); margin: 0 auto;
+      padding: 0 clamp(var(--page-pad), 4vw, 40px); text-align: center;
+    }
+    .overview-desc {
+      color: var(--text-sub); font-size: 18px; line-height: 1.8;
+      text-align: justify; margin-bottom: 32px; margin-top: 20px;
+    }
+    .overview-metric { color: var(--blue); font-weight: 800; }
+    .gamma-letter { color: var(--gamma-purple); }
+    .gamma-term { font-weight: 800; }
+    .gamma-suffix {
+      color: transparent; background-image: linear-gradient(90deg, var(--gamma-purple), var(--blue), #ef4444);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .explain-video-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px;
+      margin: 34px 0 8px; text-align: left;
+    }
+    .explain-video-card {
+      overflow: hidden; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 14px; box-shadow: 0 12px 34px #0f172a12;
+    }
+    .explain-video-card.featured { grid-column: span 2; }
+    .explain-video {
+      width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;
+      background: #0f172a;
+    }
+    .explain-video-player { background: #0f172a; }
+    .explain-video-progress { padding: 0 16px 12px; background: #0f172a; }
+    .explain-video-progress input {
+      --video-progress: 0%;
+      display: block; width: 100%; height: 16px; margin: 0;
+      appearance: none; -webkit-appearance: none; background: transparent;
+      cursor: ew-resize; touch-action: none;
+    }
+    .explain-video-progress input::-webkit-slider-runnable-track {
+      height: 5px; border-radius: 999px;
+      background: linear-gradient(90deg, #60a5fa 0 var(--video-progress), #475569 var(--video-progress) 100%);
+    }
+    .explain-video-progress input::-webkit-slider-thumb {
+      width: 15px; height: 15px; margin-top: -5px; appearance: none; -webkit-appearance: none;
+      border: 2px solid #60a5fa; border-radius: 50%; background: #fff;
+      box-shadow: 0 1px 5px #00000066;
+    }
+    .explain-video-progress input::-moz-range-track {
+      height: 5px; border-radius: 999px;
+      background: linear-gradient(90deg, #60a5fa 0 var(--video-progress), #475569 var(--video-progress) 100%);
+    }
+    .explain-video-progress input::-moz-range-thumb {
+      width: 12px; height: 12px; border: 2px solid #60a5fa; border-radius: 50%;
+      background: #fff; box-shadow: 0 1px 5px #00000066;
+    }
+    .explain-video-progress input:focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
+    .explain-video-meta { padding: 15px 18px 17px; }
+    .explain-video-title {
+      margin: 0 0 6px; color: var(--navy); font-size: 17px; font-weight: 700;
+      line-height: 1.35;
+    }
+    .explain-video-desc { margin: 0; color: #64748b; font-size: 14px; line-height: 1.55; }
+
+    /* ─── ARCHITECTURE ───────────────────────────────────── */
+    .arch-section {
+      background-color: var(--bg-light);
+      background-image:
+        linear-gradient(rgba(250, 248, 245, .60), rgba(250, 248, 245, .60)),
+        url('assets/backgrounds/gamma-sim.webp?v=20261007-1');
+      background-position: center, center;
+      background-repeat: no-repeat;
+      background-size: cover, min(760px, 62vw) auto;
+      background-attachment: fixed, fixed;
+      background-blend-mode: normal, multiply;
+      border-bottom: 1px solid var(--border);
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      padding: 80px 0;
+    }
+    .arch-inner {
+      max-width: var(--page-max); margin: 0 auto; padding: 0 40px;
+    }
+    .arch-content { margin-top: 32px; }
+    .arch-image-wrapper { text-align: center; margin-bottom: 40px; }
+    .arch-image {
+      border-radius: 12px; max-width: 100%; height: auto;
+      box-shadow: 0 4px 20px #0000001a; margin: 0 auto;
+    }
+    .telesim-platform-figure {
+      margin: 0 0 42px; padding: 18px; overflow: hidden;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+      box-shadow: 0 8px 28px #0f172a10;
+    }
+    .telesim-platform-figure img { width: 100%; height: auto; }
+    .telesim-platform-figure figcaption {
+      margin-top: 12px; color: #64748b; font-size: 14px; line-height: 1.55; text-align: center;
+    }
+    .asset-randomization { margin: 44px 0 10px; }
+    .asset-randomization.sim-topic-card {
+      margin: 44px 0 0; padding: 32px; border: 1px solid var(--topic-card-border); border-radius: 14px;
+      background: var(--topic-card-bg); box-shadow: 0 12px 32px #0f172a0d;
+    }
+    .asset-randomization.sim-topic-card + .sim-topic-card { margin-top: 32px; }
+    .sim-topic-blue { --topic-card-border: #bfdbfe; --topic-card-bg: rgba(239, 246, 255, .25); }
+    .sim-topic-purple { --topic-card-border: #ddd6fe; --topic-card-bg: rgba(245, 243, 255, .25); }
+    .sim-topic-red { --topic-card-border: #fecdd3; --topic-card-bg: rgba(255, 241, 242, .25); }
+    .sim-topic-card .asset-annotation-panel,
+    .sim-topic-card .domain-randomization-section {
+      margin-top: 0; padding-top: 0; border-top: 0;
+    }
+    .asset-randomization > .subsection-title,
+    .domain-randomization-section > .subsection-title { text-align: left; margin-left: 0; }
+    .asset-randomization > .arch-desc,
+    .domain-randomization-section > .arch-desc { max-width: none; margin-left: 0; margin-right: 0; text-align: left; }
+    .randomization-list {
+      display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 12px 14px; margin: 0; padding: 0; list-style: none;
+    }
+    .randomization-list li {
+      display: flex; grid-column: span 3; justify-content: center; align-items: center; gap: 8px;
+      min-height: 48px; padding: 10px 14px; color: #526174; background: #fff;
+      border: 1px solid #dbe3ed; border-radius: 8px; box-shadow: 0 2px 8px #0f172a0a;
+      font-size: 16px; font-weight: 700; line-height: 1.5; text-align: center;
+    }
+    .randomization-list li:nth-child(n + 5) { grid-column: span 4; }
+    .randomization-list li::before {
+      content: ''; flex: 0 0 6px; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--blue);
+    }
+    .randomization-split {
+      display: grid; grid-template-columns: minmax(0, 0.58fr) minmax(0, 1fr);
+      gap: 18px; align-items: stretch; margin-top: 20px;
+    }
+    .randomization-split .randomization-list {
+      grid-template-columns: 1fr; gap: 10px; align-content: stretch;
+    }
+    .randomization-split .randomization-list li,
+    .randomization-split .randomization-list li:nth-child(n + 5) {
+      grid-column: auto; flex: 1; justify-content: flex-start; text-align: left;
+    }
+    .randomization-split .randomization-video-card {
+      margin: 0; height: 100%; display: flex; flex-direction: column;
+    }
+    .randomization-split .randomization-video-card video {
+      flex: 1 1 auto; min-height: 0; object-fit: contain; background: #fff;
+    }
+    .asset-randomization-panel { margin-top: 30px; }
+    .domain-randomization-section { margin-top: 48px; padding-top: 36px; border-top: 1px solid #e5e7eb; }
+    .asset-annotation-panel {
+      margin-top: 34px; padding-top: 28px; border-top: 1px solid #e5e7eb;
+    }
+    .asset-annotation-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px;
+    }
+    .asset-annotation-card {
+      display: flex; flex-direction: column; gap: 14px;
+      padding: 14px; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 12px; box-shadow: 0 3px 12px #0000000d;
+      position: relative; z-index: 0; transform-origin: center;
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+    .asset-annotation-card:hover {
+      z-index: 2; transform: translateY(-3px) scale(1.025);
+      border-color: #bfdbfe; box-shadow: 0 18px 42px #0f172a24;
+    }
+    .asset-annotation-card img {
+      display: block; width: 100%; height: 125px; object-fit: contain;
+      border-radius: 8px; background: #f8fafc;
+    }
+    .asset-annotation-card h5 { margin: 0 0 7px; color: var(--navy); font-size: 16px; line-height: 1.3; }
+    .asset-annotation-card p { margin: 0; color: #64748b; font-size: 13px; line-height: 1.55; }
+    .randomization-video-card {
+      margin: 18px 0 0; overflow: hidden; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 12px; box-shadow: 0 6px 20px #0f172a10;
+    }
+    .randomization-video-card video {
+      width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #0f172a;
+    }
+    .randomization-video-card figcaption {
+      padding: 12px 15px; color: #475569; font-size: 13px; line-height: 1.5; text-align: center;
+    }
+    .asset-randomization-head {
+      display: flex; justify-content: space-between; align-items: end; gap: 24px;
+      margin-bottom: 18px;
+    }
+    .asset-randomization-head h4 {
+      margin: 0 0 6px; color: var(--navy); font-size: 24px; line-height: 1.25;
+    }
+    .asset-randomization-head p {
+      margin: 0; color: #64748b; font-size: 15px; line-height: 1.6; max-width: 660px;
+    }
+    .asset-stat-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 12px 0 20px;
+    }
+    .asset-stat {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      padding: 13px 14px; box-shadow: 0 3px 12px #0000000d;
+    }
+    .asset-stat strong {
+      display: block; color: var(--blue); font-size: 22px; line-height: 1.05; margin-bottom: 4px;
+    }
+    .asset-stat span { color: #64748b; font-size: 12px; font-weight: 700; line-height: 1.35; }
+    .scene-grid, .asset-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px;
+    }
+    .scene-card {
+      margin: 0; overflow: hidden; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 12px; box-shadow: 0 3px 12px #0000000d;
+    }
+    .scene-card-media {
+      height: 145px; overflow: hidden; background: #f3f4f6;
+    }
+    .scene-card-media img {
+      width: 100%; height: 161px; object-fit: cover; object-position: center bottom;
+      transform: translateY(-16px);
+    }
+    .scene-card figcaption {
+      padding: 9px 10px; color: #374151; font-size: 13px; font-weight: 600; text-align: center;
+    }
+    .asset-card-media { height: 190px; overflow: hidden; background: #f8fafc; }
+    .asset-card-media img { width: 100%; height: 100%; object-fit: cover; }
+    .asset-card-media.contain img { object-fit: contain; padding: 10px; }
+    .asset-subsection { margin-top: 28px; }
+    .asset-subsection h5 {
+      margin: 0 0 6px; color: var(--navy); font-size: 17px; line-height: 1.35;
+    }
+    .asset-subsection p {
+      margin: 0; color: #64748b; font-size: 14px; line-height: 1.55;
+    }
+    .articulated-asset-grid .asset-card-media { height: 156px; }
+    .articulated-asset-marquee {
+      overflow: hidden; margin-top: 16px; padding: 4px 0 10px;
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+      mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+    }
+    .articulated-asset-track {
+      display: flex; width: max-content; gap: 16px;
+      animation: articulated-asset-scroll 46s linear infinite; will-change: transform;
+    }
+    .articulated-asset-track .scene-card { flex: 0 0 260px; }
+    .articulated-asset-marquee:hover .articulated-asset-track,
+    .articulated-asset-marquee:focus-within .articulated-asset-track {
+      animation-play-state: paused;
+    }
+    @keyframes articulated-asset-scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(calc(-50% - 8px)); }
+    }
+    .arch-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 48px; align-items: center;
+    }
+    .arch-text { text-align: left; }
+    .arch-desc {
+      color: var(--text-sub); font-size: 18px; line-height: 1.8; margin-bottom: 20px;
+    }
+    .arch-desc code {
+      color: var(--navy); background: #0f172a0f; border-radius: 4px;
+      padding: 1px 6px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: .9em;
+    }
+    .arch-visual { display: flex; justify-content: center; align-items: center; }
+    .arch-img-side {
+      border-radius: 8px; width: 100%; max-width: 500px; height: auto;
+      box-shadow: 0 2px 8px #0000001a;
+    }
+    .feature-list { list-style: none; margin: 0; padding: 0; }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 0; border-bottom: 1px solid #e5e7eb;
+    }
+    .feature-item:last-child { border-bottom: none; }
+    .feature-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: #fff; font-size: 18px; font-weight: 700;
+    }
+    .feature-body { flex: 1; }
+    .feature-title { color: var(--text-main); font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+    .feature-desc { color: var(--text-sub); font-size: 15px; line-height: 1.6; margin: 0; }
+
+    /* ─── DATASET ────────────────────────────────────────── */
+    .data-synthesis-section,
+    .dataset-section {
+      background-color: var(--bg-light);
+      background-image:
+        linear-gradient(rgba(250, 248, 245, .60), rgba(250, 248, 245, .60)),
+        url('assets/backgrounds/gamma-hive.webp?v=20261007-1');
+      background-position: center, center;
+      background-repeat: no-repeat;
+      background-size: cover, min(720px, 58vw) auto;
+      background-attachment: fixed, fixed;
+      border-bottom: 1px solid var(--border);
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+    }
+    .dataset-section {
+      padding: 32px 0 64px;
+    }
+    .dataset-inner {
+      max-width: var(--page-max); margin: 0 auto; padding: 0 40px;
+    }
+    .dataset-topic-card {
+      padding: 32px; border: 1px solid #bfdbfe; border-radius: 14px;
+      background: rgba(239, 246, 255, .25); box-shadow: 0 12px 32px #0f172a0d;
+    }
+    .dataset-topic-card .stat-card,
+    .dataset-topic-card .dataset-figure {
+      background: rgba(255, 255, 255, .25);
+    }
+    .dataset-topic-card .interactive-stat-card {
+      background: rgba(255, 255, 255, .25);
+    }
+    .dataset-topic-card .pie-legend-item {
+      background: rgba(248, 250, 252, .25);
+    }
+    .dataset-topic-card .pie-legend-item:hover,
+    .dataset-topic-card .pie-legend-item.is-active {
+      background: rgba(239, 246, 255, .25);
+    }
+    .data-synthesis-section {
+      border-bottom: 0;
+      padding: 80px 0 28px;
+    }
+    .data-synthesis-inner {
+      max-width: var(--page-max); margin: 0 auto; padding: 0 40px; text-align: center;
+    }
+    .data-synthesis-intro {
+      max-width: 930px; margin: -4px auto 28px; color: var(--text-sub);
+      font-size: 18px; line-height: 1.8; text-align: center;
+    }
+    .dataset-figure.synthesis-workflow-figure { margin: 0 0 26px; }
+    .dataset-figure.synthesis-workflow-figure:hover img { transform: none; }
+    .synthesis-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px; margin-top: 26px; text-align: left;
+    }
+    .synthesis-card {
+      padding: 24px; background: rgba(255, 255, 255, .25);
+      border: 1px solid rgba(229, 231, 235, .35);
+      border-radius: 16px; box-shadow: 0 8px 28px #0f172a10;
+    }
+    .synthesis-step {
+      display: block; margin: 0 0 7px; color: #1d4ed8; font-size: 12px;
+      font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    }
+    .synthesis-title {
+      margin: 0 0 10px; color: var(--navy); font-size: 24px;
+      font-weight: 700; line-height: 1.3;
+    }
+    .synthesis-desc {
+      margin: 0 0 18px; color: #64748b; font-size: 18px; line-height: 1.8;
+    }
+    .synthesis-stage-list {
+      display: grid; gap: 12px; margin: 0; padding: 0; list-style: none;
+    }
+    .synthesis-stage-list li {
+      padding: 13px 15px; background: rgba(255, 255, 255, .25);
+      border: 1px solid rgba(219, 227, 237, .35);
+      border-radius: 10px;
+    }
+    .synthesis-stage-list strong {
+      display: block; margin-bottom: 5px; color: var(--navy); font-size: 16px;
+    }
+    .synthesis-stage-list span {
+      display: block; color: #64748b; font-size: 15px; line-height: 1.62;
+    }
+    .dataset-content { margin-top: 21px; }
+    .dataset-desc {
+      color: var(--text-sub); font-size: 18px; line-height: 1.8;
+      text-align: justify; margin-bottom: 16px;
+    }
+    .dataset-desc.note {
+      color: #6b7280; background: #f3f4f6; border-left: 3px solid #9ca3af;
+      border-radius: 6px; padding: 12px 16px; font-size: 15px; font-style: italic;
+    }
+    .dataset-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 16px; margin: 26px 0;
+    }
+    .stat-card {
+      background: var(--bg-light); border: 1px solid #e5e7eb;
+      border-radius: 14px; padding: 19px 16px; text-align: center;
+      box-shadow: 0 2px 8px #0000000d;
+    }
+    .stat-value {
+      font-size: 42px; font-weight: 800; color: var(--blue);
+      letter-spacing: -.02em; line-height: 1; margin-bottom: 6px;
+    }
+    .stat-label { color: #6b7280; font-size: 14px; font-weight: 600; letter-spacing: .02em; }
+    .interactive-stats {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 19px;
+      margin: 22px 0 18px;
+    }
+    .interactive-stat-card {
+      position: relative; overflow: hidden;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border: 1px solid #e5e7eb; border-radius: 18px;
+      padding: 14px 16px 12px; box-shadow: 0 14px 40px #0f172a10;
+    }
+    .stat-card-head { text-align: center; margin-bottom: 0; }
+    .interactive-stat-card h3 { margin: 0; color: var(--navy); font-size: 21px; line-height: 1.25; }
+    .interactive-stat-card p { margin: 0; color: #64748b; font-size: 14px; line-height: 1.55; }
+    .pie-stage {
+      position: relative; height: 230px; display: flex; align-items: center; justify-content: center;
+      perspective: 900px; cursor: grab; user-select: none; touch-action: none;
+    }
+    .pie-stage.dragging { cursor: grabbing; }
+    .pie-stack {
+      --rx: 58deg; --rz: -18deg;
+      width: 390px; height: 285px;
+      transform: rotateX(var(--rx)) rotateZ(var(--rz));
+      transform-style: preserve-3d;
+      transition: transform .12s ease-out;
+      filter: drop-shadow(0 22px 22px #0f172a2b);
+    }
+    .pie-stage.dragging .pie-stack { transition: none; }
+    .pie-svg { width: 100%; height: 100%; overflow: visible; }
+    .pie-side path { opacity: .82; }
+    .pie-top path {
+      cursor: pointer; stroke: #ffffff; stroke-width: 2;
+      transform-box: fill-box; transform-origin: center;
+      transition: opacity .18s, transform .18s, filter .18s;
+    }
+    .pie-top path.is-muted { opacity: .48; }
+    .pie-top path.is-active { opacity: 1; transform: scale(1.04); filter: brightness(1.1); }
+    .pie-center-label {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -42%);
+      min-width: 120px; padding: 9px 12px; text-align: center;
+      background: #ffffffed; border: 1px solid #e5e7eb; border-radius: 12px;
+      box-shadow: 0 8px 24px #0f172a1f; pointer-events: none;
+    }
+    .pie-center-label strong { display: block; color: var(--navy); font-size: 20px; line-height: 1; }
+    .pie-center-label span { color: #64748b; font-size: 11px; font-weight: 700; }
+    .pie-tooltip {
+      position: absolute; z-index: 4; opacity: 0; pointer-events: none;
+      transform: translate(-50%, calc(-100% - 14px));
+      background: #0f172af2; color: #fff; border-radius: 10px;
+      padding: 9px 12px; min-width: 160px; box-shadow: 0 14px 35px #0f172a40;
+      transition: opacity .14s;
+    }
+    .pie-tooltip.show { opacity: 1; }
+    .pie-tooltip strong { display: block; font-size: 13px; margin-bottom: 3px; }
+    .pie-tooltip span { display: block; color: #cbd5e1; font-size: 12px; line-height: 1.35; }
+    .pie-legend {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; margin-top: 0;
+    }
+    .pie-legend-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+      border-radius: 9px; color: #334155; font-size: 12px; font-weight: 700;
+      background: #f8fafc; border: 1px solid transparent; cursor: pointer;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    .pie-legend-item:hover, .pie-legend-item.is-active {
+      background: #eff6ff; border-color: #bfdbfe; transform: translateY(-1px);
+    }
+    .pie-legend-item:last-child:nth-child(odd) {
+      grid-column: 1 / -1; justify-self: center; width: calc(50% - 6px);
+    }
+    #legend-robots,
+    #legend-complexity { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #legend-robots .pie-legend-item:last-child:nth-child(odd) {
+      grid-column: 2 / 3; justify-self: stretch; width: auto;
+    }
+    #legend-complexity .pie-legend-item:last-child:nth-child(odd) {
+      grid-column: auto; justify-self: stretch; width: auto;
+    }
+    .pie-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+    .dataset-figures {
+      display: grid; grid-template-columns: minmax(0, 1.26fr) minmax(0, 1fr); gap: 11px;
+      margin: 22px 0 6px;
+    }
+    .real-data-block { margin: 34px 0 12px; }
+    .real-data-intro { max-width: 900px; margin: 0 auto 22px; text-align: center; }
+    .real-data-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    }
+    .real-data-card {
+      overflow: hidden; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 14px; box-shadow: 0 10px 30px #0f172a10;
+    }
+    .real-data-card video { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #0f172a; }
+    .real-data-card figcaption {
+      padding: 11px 13px; color: #374151; font-size: 13px; font-weight: 700;
+      line-height: 1.35; text-align: center;
+    }
+    .platform-group-label {
+      display: inline-block; margin-bottom: 6px; color: #1d4ed8; font-size: 11px;
+      font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    }
+    .dataset-figure {
+      position: relative; margin: 0; padding: 11px; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 12px; box-shadow: 0 2px 8px #0000000d; overflow: hidden; cursor: zoom-in;
+      transition: transform .18s, box-shadow .18s, border-color .18s;
+    }
+    .dataset-figure:hover { transform: translateY(-3px); border-color: #93c5fd; box-shadow: 0 16px 38px #0f172a18; }
+    .dataset-figure::after {
+      content: 'Click to enlarge'; position: absolute; top: 14px; right: 14px;
+      color: #fff; background: #0f172ad9; border-radius: 999px; padding: 5px 9px;
+      font-size: 11px; font-weight: 700; opacity: 0; transform: translateY(-4px);
+      transition: opacity .16s, transform .16s;
+    }
+    .dataset-figure:hover::after { opacity: 1; transform: translateY(0); }
+    .dataset-figure.wide { grid-column: span 2; }
+    .dataset-figure img { width: 100%; height: 176px; object-fit: contain; transition: transform .22s; }
+    .dataset-figure.wide img { height: auto; object-fit: contain; }
+    .dataset-figure.skill-distribution img,
+    .dataset-figure.duration-distribution img { height: auto; }
+    .dataset-figure:hover img { transform: scale(1.035); }
+    .dataset-figure figcaption { color: #6b7280; font-size: 13px; text-align: center; margin-top: 8px; }
+    .figure-lightbox {
+      position: fixed; inset: 0; z-index: 2500; display: none; align-items: center; justify-content: center;
+      padding: 40px 24px; background: #020617d9; backdrop-filter: blur(6px);
+    }
+    .figure-lightbox.open { display: flex; }
+    .lightbox-content { width: min(1120px, 96vw); color: #fff; text-align: center; }
+    .lightbox-content img {
+      width: 100%; max-height: 78vh; object-fit: contain; background: #fff; border-radius: 14px;
+      box-shadow: 0 30px 80px #00000073;
+    }
+    .lightbox-caption { margin: 14px 0 0; color: #e5e7eb; font-size: 15px; }
+    .lightbox-close {
+      position: fixed; top: 18px; right: 22px; width: 42px; height: 42px;
+      border: 1px solid #ffffff55; border-radius: 50%; background: #ffffff17;
+      color: #fff; font-size: 28px; line-height: 38px; cursor: pointer;
+    }
+    .result-highlights {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 24px 0 34px;
+    }
+    .result-highlights.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .result-highlight {
+      padding: 18px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+      box-shadow: 0 2px 8px #0000000d;
+    }
+    .result-highlight strong { display: block; color: var(--blue); font-size: 27px; line-height: 1.1; margin-bottom: 6px; }
+    .result-highlight span { color: #6b7280; font-size: 13px; line-height: 1.4; }
+    .results-figure-caption { color: #6b7280; font-size: 13px; text-align: center; margin-top: -22px; }
+    .benchmark-stack {
+      display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 30px 0 38px;
+    }
+    .benchmark-table-card {
+      overflow: hidden; background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 10px; box-shadow: 0 4px 16px #0f172a12;
+    }
+    .benchmark-table-head { padding: 17px 20px 12px; }
+    .benchmark-table-head h4 { margin: 0 0 4px; color: var(--navy); font-size: 18px; }
+    .benchmark-table-head p { margin: 0; color: #64748b; font-size: 13px; line-height: 1.5; }
+    .benchmark-table-scroll { overflow-x: auto; }
+    .benchmark-table {
+      width: 100%; border-collapse: collapse; color: #334155; font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 12px 16px; border-top: 1px solid #e5e7eb; text-align: center;
+    }
+    .benchmark-table th { background: #f8fafc; color: #0f172a; font-weight: 700; }
+    .benchmark-table th:first-child, .benchmark-table td:first-child { text-align: left; }
+    .benchmark-table tbody tr.primary { background: #eff6ff; font-weight: 700; color: #0f172a; }
+    .benchmark-table tbody tr.ablation { border-top: 2px solid #bfdbfe; }
+    .scaling-figure.full { margin: 28px 0 38px; padding: 14px; }
+    .scaling-figure.full img { height: auto; max-height: none; }
+    .scaling-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .scaling-grid.two .scaling-figure img { height: auto; }
+    .scaling-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 30px 0 38px;
+    }
+    .scaling-figure { margin: 0; padding: 10px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; }
+    .scaling-figure img { width: 100%; height: 150px; object-fit: contain; }
+    .scaling-figure figcaption { color: #6b7280; font-size: 12px; line-height: 1.35; text-align: center; margin-top: 6px; }
+    /* ─── RESULTS ────────────────────────────────────────── */
+    .results-section {
+      background: var(--bg-light); border-bottom: 1px solid var(--border);
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      padding: 80px 0;
+    }
+    .results-inner {
+      max-width: var(--page-max); margin: 0 auto; padding: 0 40px;
+    }
+    .results-content { margin-top: 32px; }
+    .results-panel { display: block; }
+    .results-panel + .results-panel {
+      margin-top: 64px; padding-top: 52px; border-top: 1px solid #e5e7eb;
+    }
+    .result-card {
+      --result-card-border: #e5e7eb;
+      padding: 32px; border: 1px solid var(--result-card-border); border-radius: 14px;
+      box-shadow: 0 12px 32px #0f172a0d;
+    }
+    .result-card + .result-card {
+      margin-top: 32px; padding-top: 32px; border-top-color: var(--result-card-border);
+    }
+    .result-card-blue { --result-card-border: #bfdbfe; background: rgba(239, 246, 255, .25); }
+    .result-card-purple { --result-card-border: #ddd6fe; background: rgba(245, 243, 255, .25); }
+    .result-card-red { --result-card-border: #fecdd3; background: rgba(255, 241, 242, .25); }
+    .results-desc {
+      color: var(--text-sub); font-size: 18px; line-height: 1.8; margin-bottom: 20px;
+    }
+    .results-video-section {
+      margin-top: 58px; padding-top: 42px; border-top: 1px solid var(--border);
+    }
+    .results-video-section video {
+      display: block; width: 100%; max-height: 620px; object-fit: contain;
+      background: #0f172a; border-radius: 12px; box-shadow: 0 8px 28px #0f172a18;
+    }
+    .results-video-caption {
+      margin: 12px auto 0; max-width: 860px; color: var(--text-sub);
+      font-size: 14px; line-height: 1.55; text-align: center;
+    }
+    .results-image-wrapper { text-align: center; margin: 32px 0; }
+    .results-image {
+      border-radius: 10px; max-width: 100%; height: auto;
+      box-shadow: 0 4px 16px #0000001a; margin: 0 auto;
+    }
+    .interactive-real-chart {
+      width: 100%; max-width: 1200px; margin: 0 auto;
+      overflow: hidden; background: #fff; border-radius: 10px;
+      box-shadow: 0 4px 16px #0000001a;
+    }
+    .interactive-real-chart svg { display: block; width: 100%; height: auto; }
+    .real-chart-bar {
+      cursor: pointer; outline: none;
+      transform-box: fill-box; transform-origin: 50% 100%;
+      transition: opacity .18s ease, transform .18s cubic-bezier(.2, .8, .2, 1);
+    }
+    .real-chart-bar.is-active {
+      transform: translateY(-1px) scale(1.045);
+    }
+    .interactive-real-chart.has-active .real-chart-bar:not(.is-active) {
+      opacity: .38;
+    }
+    .real-chart-bar-shape {
+      transition: filter .18s ease, stroke .18s ease;
+    }
+    .real-chart-bar.is-active .real-chart-bar-shape {
+      filter: brightness(1.12) saturate(1.16) drop-shadow(0 0 6px var(--bar-color));
+      stroke: #fff; stroke-width: 2px;
+    }
+    .real-chart-bar-value {
+      transition: fill .18s ease, stroke .18s ease;
+    }
+    .real-chart-bar.is-active .real-chart-bar-value {
+      fill: var(--bar-color); stroke: #fff; stroke-width: 4px;
+      paint-order: stroke; font-weight: 700;
+    }
+    .real-world-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 24px; margin: 32px 0;
+    }
+    .rw-video-item { display: flex; flex-direction: column; align-items: center; }
+    .rw-video {
+      border-radius: 8px; width: 100%; height: auto;
+      box-shadow: 0 4px 12px #0000001a;
+    }
+    .rw-video-label { color: #374151; font-size: 16px; font-weight: 500; margin-top: 12px; text-align: center; }
+
+    /* ─── GALLERY ────────────────────────────────────────── */
+    .gallery-section {
+      background: #fff; border-bottom: 1px solid var(--border);
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      padding: 60px 0 80px;
+    }
+    .gallery-inner {
+      max-width: 1400px; margin: 0 auto; padding: 0 20px;
+    }
+    .gallery-header { text-align: center; margin-bottom: 40px; }
+    .gallery-sub {
+      color: var(--text-sub); font-size: 17px; line-height: 1.7;
+      max-width: 880px; margin: 14px auto 0;
+    }
+    .gallery-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    .gallery-card {
+      background: #fff; border: 1px solid #00000014; border-radius: 18px;
+      overflow: hidden; box-shadow: 0 14px 40px #0f172a0f;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .gallery-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 50px #0f172a1a;
+    }
+    .gallery-video-wrap { position: relative; aspect-ratio: 16/9; background: var(--navy); overflow: hidden; }
+    .gallery-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-image { width: 100%; height: 100%; object-fit: contain; display: block; background: #f8fafc; }
+    .gallery-card-meta { padding: 14px 16px; }
+    .gallery-card-title {
+      color: var(--navy); font-size: 14px; font-weight: 600;
+      margin: 0 0 6px; line-height: 1.3;
+    }
+    .gallery-card-tag {
+      display: inline-flex; align-items: center;
+      background: #eff6ff; color: #1d4ed8;
+      border-radius: 999px; padding: 3px 10px;
+      font-size: 11px; font-weight: 700; letter-spacing: .02em;
+    }
+
+    /* ─── BIBTEX ─────────────────────────────────────────── */
+    .bibtex-section {
+      background: var(--bg-light); border-bottom: 1px solid var(--border);
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      padding: 80px 0;
+    }
+    .bibtex-inner {
+      max-width: var(--page-max); margin: 0 auto; padding: 0 20px;
+    }
+    .bibtex-content { margin-top: 32px; }
+    .bibtex-code {
+      color: #d4d4d4; background: #1e1e1e; border-radius: 8px;
+      padding: 24px; margin: 0 0 20px;
+      font-family: 'Fira Code', Consolas, monospace; font-size: 14px; line-height: 1.6;
+      white-space: pre-wrap; word-wrap: break-word; text-align: left; overflow-x: auto;
+    }
+    .bibtex-btn-wrap { text-align: center; }
+    .copy-bibtex-btn {
+      background: var(--text-main); color: #fff; border: none; border-radius: 6px;
+      padding: 12px 24px; font-size: 16px; font-weight: 500; cursor: pointer;
+      transition: background .2s;
+    }
+    .copy-bibtex-btn:hover { background: #333; }
+
+    /* ─── FOOTER ─────────────────────────────────────────── */
+    .footer {
+      background: #1a1a1a;
+      width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+      padding: 48px 0;
+    }
+    .footer-content {
+      display: flex; flex-direction: row; justify-content: center; align-items: center;
+      gap: 32px; max-width: var(--page-max); margin: 0 auto; padding: 0 var(--page-pad); text-align: center;
+    }
+    .footer-logo { display: flex; align-items: center; justify-content: center; margin: 0; }
+    .footer-logo.teleai { width: min(532px, 100%); }
+    .footer-logo.teleai img {
+      width: 100%; height: 108px; display: block; object-fit: contain;
+      background: #fff; border-radius: 6px; padding: 8px 12px; box-sizing: border-box;
+    }
+    .footer-logo.gamma { flex: 0 0 auto; }
+    .footer-logo.gamma img { width: 250px; height: 108px; object-fit: contain; background: #fff; border-radius: 6px; padding: 8px 12px; }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .hero-title { font-size: 67.6px; }
+      .hero-subtitle { font-size: 20px; }
+    }
+    @media (max-width: 900px) {
+      .hero { min-height: 72vh; padding: 88px 0 72px; }
+      .arch-section { background-size: cover, min(520px, 88vw) auto; }
+      .data-synthesis-section,
+      .dataset-section { background-size: cover, min(500px, 84vw) auto; }
+      .hero-title { font-size: 52px; margin-bottom: 18px; }
+      .hero-subtitle { font-size: 17px; margin-bottom: 36px; }
+      .hero-buttons { grid-template-columns: repeat(2, 1fr); max-width: 380px; gap: 12px 14px; }
+      .paper-title-row { flex-direction: column; align-items: center; gap: 16px; }
+      .paper-title { font-size: 28px; text-align: center; }
+      .section-title { font-size: 46.8px; }
+      .overview-title { font-size: 36px; }
+      .arch-grid { grid-template-columns: 1fr; gap: 32px; }
+      .telesim-platform-figure { padding: 12px; }
+      .scene-grid, .asset-grid { grid-template-columns: repeat(2, 1fr); }
+      .asset-annotation-grid { grid-template-columns: 1fr; }
+      .asset-stat-row { grid-template-columns: repeat(2, 1fr); }
+      .asset-randomization-head { display: block; }
+      .randomization-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .randomization-list li,
+      .randomization-list li:nth-child(n + 5) { grid-column: auto; }
+      .randomization-split { grid-template-columns: 1fr; }
+      .randomization-split .randomization-video-card { height: auto; }
+      .randomization-split .randomization-video-card video { flex: none; aspect-ratio: 16 / 9; }
+      .dataset-stats { grid-template-columns: repeat(2, 1fr); }
+      .interactive-stats { grid-template-columns: 1fr; }
+      .synthesis-grid { grid-template-columns: 1fr; }
+      .explain-video-grid { grid-template-columns: 1fr; }
+      .explain-video-card.featured { grid-column: auto; }
+      .result-highlights { grid-template-columns: repeat(2, 1fr); }
+      .result-highlights.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .dataset-figures { grid-template-columns: 1fr; }
+      .dataset-figure.wide { grid-column: auto; }
+      .asset-annotation-card img { height: auto; }
+      .real-data-grid { grid-template-columns: repeat(2, 1fr); }
+      .scaling-grid { grid-template-columns: repeat(2, 1fr); }
+      .real-world-grid { grid-template-columns: 1fr; }
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+      .nav-toggle { display: flex; }
+      .nav-chapters {
+        display: none; position: fixed; top: 68px; left: 0; right: 0;
+        z-index: 1001; background: #0f172af7; border-bottom: 1px solid #94a3b838;
+        flex-flow: column; align-items: stretch; gap: 4px;
+        padding: 12px var(--page-pad) 18px;
+        max-height: calc(100vh - 68px); overflow-y: auto;
+        box-shadow: 0 20px 45px #0006;
+      }
+      .nav-chapters.open { display: flex; }
+      .nav.scrolled .nav-chapters.open { background: #070a0ff7; }
+      .nav-link { padding: 14px; font-size: 17px; }
+      .nav-brand { display: none; }
+      .footer-content { gap: 20px; }
+      .footer-logo.gamma img { width: 210px; height: 94px; }
+      .footer-logo.teleai img { height: 94px; }
+    }
+    @media (max-width: 640px) {
+      .hero { min-height: 64vh; padding: 70px 0 60px; }
+      .hero-title { font-size: 41.6px; padding: 0 16px; }
+      .hero-subtitle { font-size: 14px; padding: 0 var(--page-pad); margin-bottom: 28px; }
+      .hero-buttons { grid-template-columns: 1fr; max-width: 240px; }
+      .result-card { padding: 20px; }
+      .result-card + .result-card { padding-top: 20px; }
+      .asset-randomization.sim-topic-card { padding: 20px; }
+      .dataset-topic-card { padding: 20px; }
+      .hero-logo { width: min(230px, calc(100% - 16px)); }
+      .author-logos { gap: 13px; }
+      .author-logo { width: 58px; height: 58px; }
+      .author-logo.teleai img { width: 52px; height: 52px; }
+      .author-logo.gamma-robotics { width: 112px; }
+      .author-logo.gamma-robotics img { width: 104px; height: 46px; }
+      .author-logo.tum img { width: 70px; height: 42px; }
+      .author-logo.hit img { width: 60px; height: 60px; }
+      .dataset-stats { grid-template-columns: repeat(2, 1fr); }
+      .interactive-stat-card { padding: 18px 14px; }
+      .pie-stage { height: 245px; }
+      .pie-stack { width: 230px; height: 252px; }
+      .pie-legend { grid-template-columns: 1fr; }
+      #legend-robots,
+      #legend-complexity { grid-template-columns: 1fr; }
+      #legend-robots .pie-legend-item:last-child:nth-child(odd),
+      #legend-complexity .pie-legend-item:last-child:nth-child(odd) {
+        grid-column: auto; justify-self: stretch; width: auto;
+      }
+      .result-highlights { grid-template-columns: 1fr; }
+      .result-highlights.three { grid-template-columns: 1fr; }
+      .real-data-grid { grid-template-columns: 1fr; }
+      .dataset-figure img { height: 220px; }
+      .dataset-figure.wide img { height: auto; }
+      .synthesis-card { padding: 18px; }
+      .scaling-grid { grid-template-columns: 1fr; }
+      .scene-grid, .asset-grid { grid-template-columns: 1fr; }
+      .asset-stat-row { grid-template-columns: 1fr; }
+      .randomization-list { grid-template-columns: 1fr; }
+      .asset-card-media { height: 180px; }
+      .scene-card-media { height: 180px; }
+      .scene-card-media img { height: 198px; transform: translateY(-18px); }
+      .articulated-asset-track .scene-card { flex-basis: 220px; }
+      .gallery-grid { grid-template-columns: 1fr; }
+      .arch-inner, .data-synthesis-inner, .dataset-inner, .results-inner, .overview-inner { padding: 0 12px; }
+      .footer-content { flex-direction: column; gap: 22px; }
+      .footer-logo.teleai { width: min(520px, 100%); }
+      .footer-logo.teleai img { height: 100px; }
+      .footer-logo.gamma img { width: 230px; height: 100px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .articulated-asset-marquee { overflow-x: auto; }
+      .articulated-asset-track { animation: none; }
+    }
+    @media (hover: none) {
+      .dataset-figure.synthesis-workflow-figure::after {
+        content: 'Tap to enlarge'; opacity: 1; transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAVIGATION ════════════════════════════════════════ -->
+<nav class="nav" id="nav">
+  <div class="nav-shell">
+    <div class="nav-main-row">
+      <a href="#" class="nav-brand">
+        <span class="nav-brand-title"><span class="brand-gamma">γ</span><span class="gamma-suffix">-Art</span></span>
+      </a>
+      <div class="nav-chapters" id="nav-chapters">
+        <a href="#abstract" class="nav-link active" data-section="abstract">
+          <span class="nav-num">01</span><span>Overview</span>
+        </a>
+        <a href="#architecture" class="nav-link" data-section="architecture">
+          <span class="nav-num">02</span><span>Platform</span>
+        </a>
+        <a href="#data-synthesis" class="nav-link" data-section="data-synthesis">
+          <span class="nav-num">03</span><span>Data Synthesis</span>
+        </a>
+        <a href="#dataset" class="nav-link" data-section="dataset">
+          <span class="nav-num">04</span><span>Dataset</span>
+        </a>
+        <a href="#results" class="nav-link" data-section="results">
+          <span class="nav-num">05</span><span>Results</span>
+        </a>
+        <a href="#gallery" class="nav-link" data-section="gallery">
+          <span class="nav-num">06</span><span>Gallery</span>
+        </a>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu">
+        <span class="nav-bar"></span>
+        <span class="nav-bar"></span>
+        <span class="nav-bar"></span>
+      </button>
+    </div>
+  </div>
+</nav>
+<div class="nav-spacer"></div>
+
+<!-- ═══ HERO ══════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-video-container">
+    <video class="hero-video" id="hero-video" autoplay muted playsinline poster="assets/videos/website/hero_gamma_sim.webp">
+      <source src="assets/videos/hero/compressed/hero-01-gamma-sim.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-inner">
+      <h1 class="hero-title"><span class="title-gamma">γ</span><span class="gamma-suffix">-Art</span></h1>
+      <p class="hero-subtitle">Zero-Shot Sim-to-Real Articulated Object Manipulation via Large-Scale Synthetic Pretraining</p>
+      <div class="hero-buttons">
+        <a href="http://arxiv.org/abs/2610.07652" class="hero-btn" target="_blank" rel="noopener noreferrer">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          Paper
+        </a>
+        <!-- Temporarily hidden: GitHub button
+        <span class="hero-btn is-coming-soon" aria-disabled="true">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          GitHub
+          <span class="coming-soon">Coming soon</span>
+        </span>
+        -->
+        <a href="https://huggingface.co/datasets/TeleEmbodied/SMART-Data" class="hero-btn" target="_blank" rel="noopener noreferrer">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10.376 1.056a1.28 1.28 0 0 1 3.248 0l9.6 16.625A1.28 1.28 0 0 1 22.6 20H1.4a1.28 1.28 0 0 1-1.624-2.319l9.6-16.625Z"/>
+          </svg>
+          Dataset
+        </a>
+      </div>
+      <div class="hero-logo-row">
+        <div class="hero-logo gamma-robotics">
+          <img src="assets/institutions/gamma-robotics.svg?v=20260923-4" alt="γ Robotics" />
+        </div>
+        <div class="hero-logo">
+          <img src="teleai_logo.webp" alt="TeleAI — Institute of Artificial Intelligence, China Telecom" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PAPER INFO ═════════════════════════════════════════ -->
+<section class="paper-info" id="abstract">
+  <div class="paper-info-inner">
+    <div class="paper-title-row">
+      <h2 class="paper-title"><span class="title-gamma">γ</span><span class="gamma-suffix">-Art</span>: Zero-Shot Sim-to-Real Articulated Object Manipulation via Large-Scale Synthetic Pretraining</h2>
+    </div>
+    <div class="authors-list">
+      <span class="author-name">Jicong Ao<sup>1†‡</sup></span>
+      <span class="author-name">Shuhan Jiang<sup>1,2†</sup></span>
+      <span class="author-name">Yuling Zhong<sup>1,3</sup></span>
+      <span class="author-name">Yanwen Liu<sup>1,3</sup></span>
+      <span class="author-name">Yuhan Gao<sup>1,4</sup></span>
+      <span class="author-name">Jiangyuan Zhao<sup>1,5</sup></span>
+      <span class="author-name">Yang Zhang<sup>1,6</sup></span>
+      <span class="author-name">Shiqiang Zhu<sup>2</sup></span>
+      <span class="author-name">Chenjia Bai<sup>1,7*</sup></span>
+      <span class="author-name">Xuelong Li<sup>1*</sup></span>
+    </div>
+    <div class="affiliations">
+      <div class="affil-row"><sup>1</sup>Institute of Artificial Intelligence (TeleAI), China Telecom</div>
+      <div class="affil-row"><sup>2</sup>Zhejiang University</div>
+      <div class="affil-row"><sup>3</sup>Technical University of Munich</div>
+      <div class="affil-row"><sup>4</sup>Harbin Institute of Technology</div>
+      <div class="affil-row"><sup>5</sup>Shanghai Jiao Tong University</div>
+      <div class="affil-row"><sup>6</sup>Tsinghua University</div>
+      <div class="affil-row"><sup>7</sup>Gamma Robotics (γ)</div>
+    </div>
+    <div class="corr-note">
+      <sup>†</sup>Equal contributions &nbsp;&nbsp;&nbsp;&nbsp; <sup>&ddagger;</sup>Project Lead
+      &nbsp;&nbsp;&nbsp;&nbsp; <sup>*</sup>Corresponding authors
+    </div>
+    <div class="author-logos" aria-label="Author-affiliated institution logos">
+      <span class="author-logo teleai"><img src="assets/institutions/teleai-badge.webp" alt="TeleAI" /></span>
+      <span class="author-logo gamma-robotics"><img src="assets/institutions/gamma-robotics.svg?v=20260923-4" alt="γ Robotics" /></span>
+      <span class="author-logo"><img src="assets/institutions/zhejiang-university.svg" alt="Zhejiang University" /></span>
+      <span class="author-logo tum"><img src="assets/institutions/tum.webp" alt="Technical University of Munich" /></span>
+      <span class="author-logo hit"><img src="assets/institutions/hit.webp" alt="Harbin Institute of Technology" /></span>
+      <span class="author-logo"><img src="assets/institutions/sjtu.webp" alt="Shanghai Jiao Tong University" /></span>
+      <span class="author-logo"><img src="assets/institutions/tsinghua.webp" alt="Tsinghua University" /></span>
+    </div>
+    <div class="resource-links">
+      <a href="http://arxiv.org/abs/2610.07652" class="resource-link" target="_blank" rel="noopener noreferrer">
+        <svg class="resource-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        Paper
+      </a>
+      <!-- Temporarily hidden: Code (TeleIllusion)
+      <a href="https://github.com/TeleHuman/TeleIllusion" class="resource-link" target="_blank" rel="noopener noreferrer">
+        <svg class="resource-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+        </svg>
+        Code (TeleIllusion)
+      </a>
+      -->
+      <a href="https://huggingface.co/datasets/TeleEmbodied/SMART-Data" class="resource-link" target="_blank" rel="noopener noreferrer">
+        <svg class="resource-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10.376 1.056a1.28 1.28 0 0 1 3.248 0l9.6 16.625A1.28 1.28 0 0 1 22.6 20H1.4a1.28 1.28 0 0 1-1.624-2.319l9.6-16.625Z"/>
+        </svg>
+        Dataset (<span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></span>)
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ABSTRACT ══════════════════════════════════════════ -->
+<section class="overview-section">
+  <div class="overview-inner">
+    <p class="section-eyebrow">01 Overview</p>
+      <h2 class="section-title overview-title">Large-Scale Synthetic Pretraining for Articulated Manipulation</h2>
+    <p class="overview-desc">
+      Articulated-object manipulation demands precise contact with functional parts while satisfying joint constraints,
+      making high-quality real-world demonstrations difficult to collect at scale.
+      <strong><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art</span></strong> addresses this bottleneck with
+      <strong><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></strong>, an articulation-aware IsaacLab-based simulation platform for asset
+      annotation, skill and motion generation, and efficient demonstration collection. On top of it, <strong>agentic task
+      generation</strong> creates articulated-object tasks with varied complexity and temporal horizons, while a
+      <strong>distributed synthesis system</strong>—shown in the accompanying videos as
+      <strong><span class="gamma-letter">γ</span><span class="gamma-suffix">-Hive</span></strong>—scales
+      trajectory generation and dataset production across parallel workers. Together, these components produce
+      <strong><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></strong>, with
+      <span class="overview-metric">1,004,584</span> demonstrations spanning
+      <span class="overview-metric">44</span> task types, <span class="overview-metric">5</span> robot setups, and
+      <span class="overview-metric">2,507</span> articulated objects. A VLA model pretrained on this synthetic data
+      shows competitive simulation performance and
+      transfers zero-shot to real-world articulated-object manipulation, demonstrating the value of scalable synthetic
+      supervision for contact-rich tasks.
+    </p>
+    <div class="explain-video-grid" aria-label="γ-Art overview videos">
+      <article class="explain-video-card featured">
+        <div class="explain-video-player">
+          <video class="explain-video" id="gamma-art-main-demo" autoplay muted loop playsinline preload="metadata" poster="assets/videos/website/gamma_art_main_demo.webp">
+            <source src="assets/videos/website/gamma_art_main_demo.mp4" type="video/mp4">
+          </video>
+          <div class="explain-video-progress">
+            <input id="gamma-art-main-demo-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="γ-Art main demo playback progress" />
+          </div>
+        </div>
+        <div class="explain-video-meta">
+          <h3 class="explain-video-title"><span class="title-gamma">γ</span><span class="gamma-suffix">-Art</span> main demo</h3>
+          <p class="explain-video-desc">End-to-end view of how task generation,
+            <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span>,
+            <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Hive</span></span>,
+            <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></span>, and real-robot transfer connect.</p>
+        </div>
+      </article>
+      <article class="explain-video-card">
+        <video class="explain-video" autoplay muted loop playsinline preload="metadata" poster="assets/videos/website/agentic_task_generation.webp">
+          <source src="assets/videos/website/agentic_task_generation.mp4" type="video/mp4">
+        </video>
+        <div class="explain-video-meta">
+          <h3 class="explain-video-title">Agentic task generation</h3>
+          <p class="explain-video-desc">Natural-language requests become structured task definitions, simulation assets, skills, and execution settings.</p>
+        </div>
+      </article>
+      <article class="explain-video-card">
+        <video class="explain-video" autoplay muted loop playsinline preload="metadata" poster="assets/videos/website/gamma_sim_framework.webp">
+          <source src="assets/videos/website/gamma_sim_framework.mp4" type="video/mp4">
+        </video>
+        <div class="explain-video-meta">
+          <h3 class="explain-video-title">Simulation framework</h3>
+          <p class="explain-video-desc"><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span>
+            composes assets, scenes, skills, camera layouts, and randomized physical settings into executable tasks.</p>
+        </div>
+      </article>
+      <article class="explain-video-card">
+        <video class="explain-video" autoplay muted loop playsinline preload="metadata" poster="assets/videos/website/gamma_hive.webp">
+          <source src="assets/videos/hero/compressed/hero-04-gamma-hive.mp4" type="video/mp4">
+        </video>
+        <div class="explain-video-meta">
+          <h3 class="explain-video-title"><span class="title-gamma">γ</span><span class="gamma-suffix">-Hive</span></h3>
+          <p class="explain-video-desc">A distributed production layer scales trajectory collection, visual rendering, and dataset conversion across parallel workers.</p>
+        </div>
+      </article>
+      <article class="explain-video-card">
+        <video class="explain-video" autoplay muted loop playsinline preload="metadata" poster="assets/videos/website/gamma_sim2real_reel.webp">
+          <source src="assets/videos/website/gamma_sim2real_reel.mp4" type="video/mp4">
+        </video>
+        <div class="explain-video-meta">
+          <h3 class="explain-video-title">Sim-to-real transfer</h3>
+          <p class="explain-video-desc">Representative drawer, sliding-door, bucket-lifting, and dispenser-pressing trials on RM75, AC1, and R1Pro.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ARCHITECTURE ══════════════════════════════════════ -->
+<section class="arch-section" id="architecture">
+  <div class="arch-inner">
+    <div style="text-align:center;">
+      <p class="section-eyebrow">02 Platform</p>
+      <h2 class="section-title"><span class="title-gamma">γ</span><span class="gamma-suffix">-Sim</span></h2>
+    </div>
+    <div class="arch-content">
+      <figure class="telesim-platform-figure">
+        <img src="assets/platform/telesim-framework.webp" alt="γ-Sim platform overview showing its asset library, annotation and motion generation, parallel simulation, platform capabilities, and data production pipeline" />
+        <figcaption><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span> platform overview:
+          asset library, annotation and motion generation, parallel simulation, domain randomization, and data production.</figcaption>
+      </figure>
+      <div class="arch-text">
+        <p class="arch-desc">
+          <strong><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></strong> is a versatile IsaacLab-based simulation platform designed for articulated-object
+          manipulation. It turns natural-language task descriptions into executable configurations and combines
+          asset management, motion generation, parallel simulation, domain randomization, and data production
+          into one platform.
+        </p>
+        <p class="arch-desc">
+          The platform supports <strong>seven embodiments</strong>—Franka Emika Panda, RM75, AC1, R1Pro, Flexiv Rizon 4S,
+          Marvin M6s, and Unitree H1-2—and assembles them with configurable camera layouts. <strong>Five representative
+          setups</strong> are used in <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></span>.
+        </p>
+        <p class="arch-desc">
+          Its asset library contains <strong>9,116 rigid objects</strong> across <strong>1,071 categories</strong> and
+          <strong>2,507 articulated objects</strong> across <strong>88 functional categories</strong>.
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span> also integrates
+          <strong>1,452 visual scenes</strong> and <strong>more than 10,000 high-resolution 4K indoor images</strong> generated
+          with Qwen-Image to broaden scene and illumination coverage.
+          Hunyuan-World 3DGS scenes and Hunyuan3D assets are additionally used for sim-to-real task synthesis.
+        </p>
+        <p class="arch-desc">
+          Constraint-aware Cartesian trajectories, collision-aware GPU planning, and lower-velocity contact
+          establishment are specialized for sustained articulated interactions such as doors, drawers, knobs,
+          and appliance controls. An asynchronous plan-and-execute design scales collection across parallel
+          environments.
+        </p>
+      </div>
+      <div class="asset-randomization sim-topic-card sim-topic-blue">
+        <h3 class="subsection-title">Asset Library</h3>
+        <p class="arch-desc">
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span> builds executable task instances from a broad library of rigid and articulated objects, robot
+          embodiments, and generated assets for sim-to-real task synthesis.
+        </p>
+        <div class="asset-randomization-panel embodiment-support-panel">
+          <div class="asset-randomization-head">
+            <div>
+              <h4>Embodiment Support</h4>
+              <p>Representative robot platforms and configurable embodiment setups supported by
+                <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span>.</p>
+            </div>
+          </div>
+          <div class="articulated-asset-marquee" data-asset-marquee>
+            <div class="articulated-asset-track">
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/ac1-dual-arm.webp" alt="AC1 dual-arm robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>AC1</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/franka-research-3.webp" alt="Franka Research 3 robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>Franka Research 3</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/unitree-h1-2.webp" alt="Unitree H1-2 humanoid robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>Unitree H1-2</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/agilex-piper.webp" alt="AgileX Piper robotic arm embodiment" loading="lazy" />
+                </div>
+                <figcaption>AgileX Piper</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/ur.webp" alt="Universal Robots embodiment" loading="lazy" />
+                </div>
+                <figcaption>Universal Robots</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/arx-ac1-dual-arm.webp" alt="ARX-AC1 dual-arm robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>ARX-AC1</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/rm75-dual-arm.webp" alt="Dualarm RM75 robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>Dualarm RM75</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/franka-panda-dual-arm.webp" alt="Dualarm Franka Panda robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>Dualarm Franka Panda</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/galaxea-r1pro.webp" alt="Galaxea R1Pro humanoid robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>Galaxea R1Pro</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/marvin-m6s-dual-arm.webp" alt="Marvin M6S dual-arm robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>Marvin M6S</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/robots/embodiments/flexiv-rizon-4s.webp" alt="Flexiv Rizon 4S robot embodiment" loading="lazy" />
+                </div>
+                <figcaption>Flexiv Rizon 4S</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+        <div class="asset-randomization-panel">
+          <div class="asset-randomization-head">
+            <div>
+              <h4>Manipulable Object Support</h4>
+              <p><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span> builds task instances from a broad library of rigid objects,
+                articulated objects, robot embodiments, and generated assets for sim-to-real task synthesis.</p>
+            </div>
+          </div>
+          <div class="asset-stat-row">
+            <div class="asset-stat"><strong>9,116</strong><span>Rigid objects</span></div>
+            <div class="asset-stat"><strong>1,071</strong><span>Rigid object categories</span></div>
+            <div class="asset-stat"><strong>2,507</strong><span>Articulated objects</span></div>
+            <div class="asset-stat"><strong>88</strong><span>Functional articulated categories</span></div>
+          </div>
+          <div class="asset-subsection">
+            <div class="articulated-asset-marquee" data-asset-marquee>
+              <div class="articulated-asset-track">
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/oven.webp" alt="Oven articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Oven</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/refrigerator.webp" alt="Refrigerator articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Refrigerator</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/microwave.webp" alt="Microwave articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Microwave</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/water-dispenser.webp" alt="Water dispenser articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Water dispenser</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/nightstand.webp" alt="Nightstand articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Nightstand</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/wardrobe.webp" alt="Wardrobe articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Wardrobe</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/toilet.webp" alt="Toilet articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Toilet</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/window.webp" alt="Window articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Window</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/juicer.webp" alt="Juicer articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Juicer</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/toolbox.webp" alt="Toolbox articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Toolbox</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/desk-lamp.webp" alt="Desk lamp articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Desk lamp</figcaption>
+              </figure>
+              <figure class="scene-card">
+                <div class="asset-card-media contain">
+                  <img src="assets/asset-library/articulated/faucet.webp" alt="Faucet articulated object asset" loading="lazy" />
+                </div>
+                <figcaption>Faucet</figcaption>
+              </figure>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="asset-randomization-panel scene-library-panel">
+          <div class="asset-randomization-head">
+            <div>
+              <h4>Scene Library</h4>
+              <p><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span> integrates 1,452 visual scenes and more than 10,000
+                high-resolution 4K indoor images, spanning bathrooms, bedrooms, kitchens, and living rooms.</p>
+            </div>
+          </div>
+          <div class="asset-stat-row">
+            <div class="asset-stat"><strong>1,452</strong><span>Visual scenes</span></div>
+            <div class="asset-stat"><strong>10,000+</strong><span>4K indoor images</span></div>
+            <div class="asset-stat"><strong>4K</strong><span>Image resolution</span></div>
+            <div class="asset-stat"><strong>Multi-Source</strong><span>GN0, SDGScene, InteriorGS, etc.</span></div>
+          </div>
+          <div class="scene-grid">
+            <figure class="scene-card">
+              <div class="asset-card-media">
+                <img src="assets/scene-library/bathroom.webp" alt="Bathroom scene asset example" loading="lazy" />
+              </div>
+              <figcaption>Bathroom scene</figcaption>
+            </figure>
+            <figure class="scene-card">
+              <div class="asset-card-media">
+                <img src="assets/scene-library/bedroom.webp" alt="Bedroom scene asset example" loading="lazy" />
+              </div>
+              <figcaption>Bedroom scene</figcaption>
+            </figure>
+            <figure class="scene-card">
+              <div class="asset-card-media">
+                <img src="assets/scene-library/kitchen.webp" alt="Kitchen scene asset example" loading="lazy" />
+              </div>
+              <figcaption>Kitchen scene</figcaption>
+            </figure>
+            <figure class="scene-card">
+              <div class="asset-card-media">
+                <img src="assets/scene-library/kitchen-variant.webp" alt="Alternative kitchen scene asset example" loading="lazy" />
+              </div>
+              <figcaption>Kitchen variation</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+      <div class="asset-randomization sim-topic-card sim-topic-purple">
+        <h3 class="subsection-title">Asset Annotation</h3>
+        <div class="asset-annotation-panel">
+          <p class="arch-desc">Rigid and articulated assets are annotated with geometry, category, and interaction metadata so they can be instantiated consistently across simulation tasks.</p>
+          <div class="asset-annotation-grid">
+            <article class="asset-annotation-card">
+              <img src="assets/annotations/rigid_annotation.webp" alt="Rigid object annotation pipeline from RGB and depth rendering through AnyGrasp" loading="lazy" />
+              <div>
+                <h5>Rigid object annotation</h5>
+                <p>Rigid assets are organized by category and visual variants, with stable geometry and appearance metadata for placement, material randomization, and scene composition.</p>
+              </div>
+            </article>
+            <article class="asset-annotation-card">
+              <img src="assets/annotations/articulation_annotation.webp" alt="Articulated object annotation with part and joint interaction metadata" loading="lazy" />
+              <div>
+                <h5>Articulated object annotation</h5>
+                <p>Articulated assets expose movable parts and joint semantics, including links, axes, limits, and interaction regions for constraint-aware motion generation.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+      <div class="asset-randomization sim-topic-card sim-topic-red">
+        <div class="domain-randomization-section">
+          <h3 class="subsection-title">Domain Randomization</h3>
+          <p class="arch-desc">
+            Domain randomization increases demonstration diversity while preserving articulated-part semantics through
+            <strong>spatial, physical, and visual variation</strong>:
+          </p>
+          <div class="randomization-split">
+            <ul class="randomization-list">
+              <li>Object poses</li>
+              <li>Robot initial configurations</li>
+              <li>Camera extrinsics</li>
+              <li>Part-wise friction and density</li>
+              <li>Joint stiffness and damping</li>
+              <li>Part-wise material and texture</li>
+              <li>Local and global illumination</li>
+            </ul>
+            <figure class="randomization-video-card">
+              <video autoplay muted loop playsinline preload="metadata" poster="assets/videos/website/domain_randomization.webp">
+                <source src="assets/videos/website/domain_randomization.mp4" type="video/mp4">
+              </video>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DATA SYNTHESIS ════════════════════════════════════ -->
+<section class="data-synthesis-section" id="data-synthesis">
+  <div class="data-synthesis-inner">
+    <p class="section-eyebrow">03 Data Synthesis</p>
+    <h2 class="section-title">Synthetic Data Scaling</h2>
+    <p class="data-synthesis-intro">
+      <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art</span></span>
+      connects task authoring to large-scale demonstration production. A task-generation agent first grounds natural
+      language in executable simulation configurations; distributed workers then decouple trajectory rollout,
+      multi-view rendering, and dataset conversion so failed trajectories do not consume the rendering budget.
+      At scale, each 8-GPU server produces approximately <strong>144 hours of data per day</strong>.
+    </p>
+    <figure class="dataset-figure wide synthesis-workflow-figure">
+      <img
+        src="assets/data-synthesis/data_synthesis_workflow.webp"
+        alt="Data synthesis workflow from agentic task generation to distributed demonstration production"
+        width="2600"
+        height="1636"
+        loading="lazy"
+      />
+      <figcaption>
+        The data-synthesis workflow: agentic task generation produces executable configurations, and distributed
+        workers turn them into validated <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></span> demonstrations.
+      </figcaption>
+    </figure>
+
+    <div class="synthesis-grid">
+      <article class="synthesis-card" aria-labelledby="agentic-task-generation">
+        <h3 class="synthesis-title" id="agentic-task-generation">Agentic Task Generation</h3>
+        <p class="synthesis-desc">
+          <strong>A task-generation agent</strong> converts a natural-language manipulation request into a grounded, executable
+          simulation configuration. The agent reasons over the asset catalog, part-level manipulation annotations,
+          and examples of valid task files rather than creating simulator calls directly from unconstrained text.
+        </p>
+        <ol class="synthesis-stage-list">
+          <li>
+            <strong>Unified task specification</strong>
+            <span>One structured task describes the scene, objects, and robot embodiment, the skill sequence, initial state, and success criterion, plus rendering, physics, randomization, and parallelism settings.</span>
+          </li>
+          <li>
+            <strong>Scene grounding</strong>
+            <span>An asset-retrieval tool maps the instruction to a robot setup, target object, background scene, and auxiliary assets; it also resolves robot configurations and physically plausible object states and poses.</span>
+          </li>
+          <li>
+            <strong>Skill-program construction</strong>
+            <span>Part-level joint and interaction annotations guide composition of the 23 reusable manipulation skills into a parameterized high-level program.</span>
+          </li>
+          <li>
+            <strong>Simulation setup generation</strong>
+            <span>The agent selects lighting, rendering quality, and domain randomization, then scales environment parallelism to the expected task horizon; humans can optionally refine the result in the simulator UI.</span>
+          </li>
+        </ol>
+      </article>
+
+      <article class="synthesis-card" aria-labelledby="distributed-demonstration-synthesis">
+        <h3 class="synthesis-title" id="distributed-demonstration-synthesis">Distributed Demonstration Synthesis</h3>
+        <p class="synthesis-desc">
+          Large-scale synthesis separates CPU-bound planning from GPU-intensive rendering. A scheduler coordinates
+          three workload types across shared GPU and CPU resources, while quality checks remove unstable or
+          unsuccessful rollouts before they reach the rendering stage.
+        </p>
+        <ol class="synthesis-stage-list">
+          <li>
+            <strong>Trajectory collection</strong>
+            <span>Workers execute up to 500 parallel environments with a shared motion planner; jerk and configuration-deviation checks trigger early resets, and only successful trajectories are retained.</span>
+          </li>
+          <li>
+            <strong>Visual rendering</strong>
+            <span>Stored seeds enable deterministic replay. Tiled Isaac Lab cameras perform parallel multi-view rendering while observations are incrementally encoded into HDF5.</span>
+          </li>
+          <li>
+            <strong>Dataset conversion</strong>
+            <span>CPU workers stream HDF5 results into LeRobot format, map action and observation keys across embodiments, encode multi-camera videos, and remove redundant fields.</span>
+          </li>
+          <li>
+            <strong>Distributed scheduling</strong>
+            <span>A shared storage pool connects stages; the scheduler supports FIFO and priority dispatch, splits long jobs into subtasks, monitors status, and retries failed tasks.</span>
+          </li>
+        </ol>
+      </article>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ DATASET ════════════════════════════════════════════ -->
+<section class="dataset-section" id="dataset">
+  <div class="dataset-inner">
+    <div class="dataset-topic-card">
+    <div style="text-align:center;">
+      <p class="section-eyebrow">04 Dataset</p>
+      <h2 class="section-title"><span class="title-gamma">γ</span><span class="gamma-suffix">-Art-Data</span></h2>
+    </div>
+    <div class="dataset-content">
+      <div class="dataset-stats">
+        <div class="stat-card">
+          <div class="stat-value">1,004,584</div>
+          <div class="stat-label">Trajectories</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">44</div>
+          <div class="stat-label">Task types</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">2,507</div>
+          <div class="stat-label">Articulated Objects</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Robot setups</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">23</div>
+          <div class="stat-label">Manipulation skills</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">500M+</div>
+          <div class="stat-label">Frames</div>
+        </div>
+      </div>
+
+      <p class="dataset-desc">
+        <strong><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></strong> is a
+        <strong>large-scale synthetic dataset</strong> produced by
+        <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Sim</span></span> for articulated-object
+        manipulation. It contains <strong>1,004,584 trajectories</strong>, approximately <strong>500 million frames</strong>,
+        and more than <strong>4,600 hours</strong> of manipulation data across <strong>five robot setups</strong>.
+      </p>
+      <p class="dataset-desc">
+        It covers <strong>44 task types</strong> and <strong>23 reusable skills</strong>, with <strong>2,507 articulated objects</strong> spanning
+        <strong>23 functional categories</strong> in the collected trajectories and <strong>88 categories</strong> in the full asset library. Examples include
+        cabinets, drawers, windows, refrigerators, ovens, dishwashers, dispensers, and microwave controls.
+        Each demonstration contains <strong>multi-view observations, proprioceptive states, language instructions, and
+        action trajectories</strong> in a standardized <strong>LeRobot v3.0 format</strong>.
+      </p>
+      <p class="dataset-desc">
+        The dataset includes <strong>atomic, composite, and long-horizon tasks</strong>
+        (<strong>69.4%, 20.9%, and 9.7%</strong>), plus variation in object placement, camera parameters, robot initial
+        configuration, physical properties, materials, and illumination. These <strong>controlled variations</strong>
+        target the <strong>visual, geometric, and contact-related sources of the sim-to-real gap</strong>.
+      </p>
+      <div class="interactive-stats">
+        <div class="interactive-stat-card">
+          <div class="stat-card-head">
+            <h3>Trajectories by Robot Setup</h3>
+          </div>
+          <div class="pie-stage" data-chart="robots" aria-label="Interactive 3D pie chart showing trajectory distribution by robot setup">
+            <div class="pie-stack" id="pie-robots"></div>
+            <div class="pie-center-label" id="pie-robots-center"><strong>1.0M+</strong><span>trajectories</span></div>
+            <div class="pie-tooltip" id="pie-robots-tooltip" role="status"></div>
+          </div>
+          <div class="pie-legend" id="legend-robots"></div>
+        </div>
+        <div class="interactive-stat-card">
+          <div class="stat-card-head">
+            <h3>Task Complexity Mix</h3>
+          </div>
+          <div class="pie-stage" data-chart="complexity" aria-label="Interactive 3D pie chart showing task complexity distribution">
+            <div class="pie-stack" id="pie-complexity"></div>
+            <div class="pie-center-label" id="pie-complexity-center"><strong>44</strong><span>task types</span></div>
+            <div class="pie-tooltip" id="pie-complexity-tooltip" role="status"></div>
+          </div>
+          <div class="pie-legend" id="legend-complexity"></div>
+        </div>
+      </div>
+      <div class="dataset-figures">
+        <figure class="dataset-figure wide">
+          <img src="assets/data-statistics/articulation_objects_distribution.webp?v=20261008-transparent" alt="Distribution of trajectories across articulated object categories" loading="lazy" />
+          <figcaption>Articulated object category coverage</figcaption>
+        </figure>
+        <figure class="dataset-figure skill-distribution">
+          <img src="assets/data-statistics/skill_distribution.webp?v=20261008-transparent" alt="Distribution of manipulation skills" loading="lazy" />
+          <figcaption>Manipulation skill distribution</figcaption>
+        </figure>
+        <figure class="dataset-figure duration-distribution">
+          <img src="assets/data-statistics/task_duration_distribution.webp?v=20261008-transparent" alt="Distribution of task durations" loading="lazy" />
+          <figcaption>Task duration distribution</figcaption>
+        </figure>
+      </div>
+      <!-- Temporarily hidden: Real Robot Trial Examples
+      <div class="real-data-block">
+        <h3 class="subsection-title">Real Robot Trial Examples</h3>
+        <p class="dataset-desc real-data-intro">
+          The real-machine evidence is organized by robot platform. RM75 uses the white dual-arm setup, AC1 uses
+          the black-and-silver ARX dual-arm setup, and R1Pro uses the humanoid platform with a visible torso.
+        </p>
+        <div class="real-data-grid">
+          <figure class="real-data-card">
+            <video autoplay muted loop playsinline preload="metadata">
+              <source src="assets/videos/real-world/trials/rm75_dispenser_press.mp4" type="video/mp4">
+            </video>
+            <figcaption><span class="platform-group-label">RM75</span><br>Dispenser press</figcaption>
+          </figure>
+          <figure class="real-data-card">
+            <video autoplay muted loop playsinline preload="metadata">
+              <source src="assets/videos/real-world/trials/ac1_drawer_pull.mp4" type="video/mp4">
+            </video>
+            <figcaption><span class="platform-group-label">AC1</span><br>Drawer pull</figcaption>
+          </figure>
+          <figure class="real-data-card">
+            <video autoplay muted loop playsinline preload="metadata">
+              <source src="assets/videos/real-world/trials/ac1_sliding_door.mp4" type="video/mp4">
+            </video>
+            <figcaption><span class="platform-group-label">AC1</span><br>Sliding door</figcaption>
+          </figure>
+          <figure class="real-data-card">
+            <video autoplay muted loop playsinline preload="metadata">
+              <source src="assets/videos/real-world/trials/r1pro_bucket_lift.mp4" type="video/mp4">
+            </video>
+            <figcaption><span class="platform-group-label">R1Pro</span><br>Bucket lift</figcaption>
+          </figure>
+        </div>
+      </div>
+      -->
+
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RESULTS ════════════════════════════════════════════ -->
+<section class="results-section" id="results">
+  <div class="results-inner">
+    <div style="text-align:center;">
+      <p class="section-eyebrow">05 Results</p>
+      <h2 class="section-title">Experimental Results</h2>
+    </div>
+    <div class="results-content">
+      <div class="results-panel result-card result-card-blue" id="tab-sim">
+        <h3 class="subsection-title">Simulation Benchmark Evaluation</h3>
+        <div class="result-highlights">
+          <div class="result-highlight"><strong>96.8%</strong><span>LIBERO average success rate</span></div>
+          <div class="result-highlight"><strong>28.8%</strong><span>RoboCasa365 average score</span></div>
+          <div class="result-highlight"><strong>+2.1 pts</strong><span>Advantage on LIBERO</span></div>
+          <div class="result-highlight"><strong>+11.9 pts</strong><span>Advantage on RoboCasa365</span></div>
+        </div>
+        <p class="results-desc">
+          The model borrows the PRTS architecture: a Qwen3-VL-4B backbone with a DiT-based action expert trained
+          with flow matching. For controlled comparisons, the CRL objective is removed.
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span> uses
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></span> for first-stage behavior-cloning
+          pretraining, then is post-trained on the downstream benchmark;
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span>(w/o S1)</span> skips first-stage
+          pretraining. On standard post-training settings,
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span> reaches
+          <strong>96.8%</strong> average success on LIBERO and
+          <strong>28.8%</strong> on RoboCasa365.
+        </p>
+        <p class="results-desc">
+          On LIBERO, <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span> exceeds
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span>(w/o S1)</span> by
+          <strong>2.1 points</strong> (96.8% vs. 94.7%), surpasses
+          <span aria-label="pi zero">&pi;<sub>0</sub></span> (94.2%) and Qwen3-VL-&pi; (94.7%), and approaches
+          <span aria-label="pi zero point five">&pi;<sub>0.5</sub></span> (96.9%) and
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span>(Real)</span> (97.8%), which uses
+          real-world pretraining. On RoboCasa365,
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span>
+          outperforms the strongest listed baseline, GR00T N1.5 (23.9%), despite using synthetic pretraining
+          only. <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span> also exceeds
+          π<sub>0.5</sub> by <strong>11.9 points</strong> on RoboCasa365 and demonstrates an earlier performance
+          advantage during post-training, while
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span>(w/o S1)</span> reaches 89.9% at the same point.
+        </p>
+        <div class="benchmark-stack" aria-label="Simulation benchmark results">
+          <article class="benchmark-table-card">
+            <div class="benchmark-table-head">
+              <h4>LIBERO Benchmark</h4>
+              <p>Average success rate across the LIBERO benchmark suites (%).</p>
+            </div>
+            <div class="benchmark-table-scroll">
+              <table class="benchmark-table">
+                <thead><tr><th>Method</th><th>Average</th></tr></thead>
+                <tbody>
+                  <tr><td>&pi;<sub>0</sub></td><td>94.2</td></tr>
+                  <tr><td>Qwen3-VL-&pi;</td><td>94.7</td></tr>
+                  <tr><td>&pi;<sub>0.5</sub></td><td>96.9</td></tr>
+                  <tr><td><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span> (Real)</span></td><td><strong>97.8</strong></td></tr>
+                  <tr class="ablation"><td><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span> (w/o S1)</span></td><td>94.7</td></tr>
+                  <tr class="primary"><td><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span></td><td>96.8</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+          <article class="benchmark-table-card">
+            <div class="benchmark-table-head">
+              <h4>RoboCasa365 Benchmark</h4>
+              <p>Success rate by task split (%); bold values indicate the best result in each column.</p>
+            </div>
+            <div class="benchmark-table-scroll">
+              <table class="benchmark-table">
+                <thead>
+                  <tr><th>Method</th><th>Atomic Seen</th><th>Composite Seen</th><th>Composite Unseen</th><th>Average</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>&pi;<sub>0</sub></td><td>34.6</td><td>6.1</td><td>1.1</td><td>14.8</td></tr>
+                  <tr><td>&pi;<sub>0.5</sub></td><td>39.6</td><td>7.1</td><td>1.2</td><td>16.9</td></tr>
+                  <tr><td>GR00T N1.6</td><td>51.1</td><td>9.4</td><td>1.7</td><td>21.9</td></tr>
+                  <tr><td>GR00T N1.5</td><td>50.7</td><td>14.8</td><td>2.7</td><td>23.9</td></tr>
+                  <tr class="ablation"><td><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span> (w/o S1)</span></td><td>43.3</td><td>9.4</td><td>4.4</td><td>20.0</td></tr>
+                  <tr class="primary"><td><span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span></td><td><strong>52.8</strong></td><td><strong>23.1</strong></td><td><strong>7.5</strong></td><td><strong>28.8</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+        <!-- Temporarily hidden: Post-Training Convergence
+        <h3 class="subsection-title">Post-Training Convergence</h3>
+        <div class="results-image-wrapper">
+          <img class="results-image" src="assets/results/success_rate_line_plot_libero.webp?v=20260923-4" alt="LIBERO post-training convergence for γ-Art-VLA and γ-Art-VLA without first-stage pretraining" style="max-width:900px;" loading="lazy" />
+        </div>
+        <p class="results-figure-caption">LIBERO post-training convergence. The benchmark tables above remain the primary evaluation results.</p>
+        -->
+      </div>
+
+      <div class="results-panel result-card result-card-purple" id="tab-real">
+        <h3 class="subsection-title">Zero-Shot Sim-to-Real Transfer</h3>
+        <div class="result-highlights">
+          <div class="result-highlight"><strong>76.7%</strong><span>overall success across 12 real-world tasks</span></div>
+          <div class="result-highlight"><strong>85.0%</strong><span>Average success on AC-1</span></div>
+          <div class="result-highlight"><strong>84.4%</strong><span>Average success on R1Pro</span></div>
+          <div class="result-highlight"><strong>+26.7 pts</strong><span>Advantage on real-world tasks</span></div>
+        </div>
+        <p class="results-desc">
+          A key result is <strong>zero-shot sim-to-real transfer</strong>: models are post-trained with synthetic
+          task demonstrations only, without task-specific real-world demonstrations, and then evaluated on
+          <strong>physical robots</strong>. The evaluation covers <strong>12 articulated-object tasks</strong> across a
+          dual-arm RealMan RM75, R1Pro, and ARX AC-1. Each platform uses three RGB cameras, including one center
+          camera and one wrist camera on each arm. We synthesize <strong>500 demonstrations per task</strong> in
+          approximately two hours and measure success over <strong>15 independent trials</strong>.
+        </p>
+        <p class="results-desc">
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span> achieves
+          <strong>76.7% overall success</strong>, compared with <strong>50.0%</strong> for
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span>(w/o S1)</span>,
+          <strong>59.4%</strong> for
+          <span aria-label="pi zero point five">&pi;<sub>0.5</sub></span>, and <strong>69.4%</strong> for
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span>(Real)</span>. It matches or outperforms
+          <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span>(w/o S1)</span> on
+          <strong>every matched task</strong>; the largest gains are <strong>46.7 points</strong> on RM75
+          bucket-handle lifting and AC-1 drawer pulling. Performance also scales positively as synthetic task
+          demonstrations increase from <strong>1 to 500 episodes</strong>.
+        </p>
+        <div class="results-image-wrapper">
+          <div class="interactive-real-chart" data-real-world-chart role="img" aria-label="Interactive real-world success rates across twelve articulated-object manipulation tasks">
+            <noscript>
+              <img class="results-image" src="assets/results/sim2real_experiment_500ep.webp?v=20260923-4" alt="Real-world success rates across twelve articulated-object manipulation tasks" loading="lazy" />
+            </noscript>
+          </div>
+        </div>
+        <p class="results-figure-caption">Real-world evaluation across three robot platforms and twelve tasks; success rates are measured over 15 trials.</p>
+        <div class="real-world-grid">
+          <div class="rw-video-item">
+            <video class="rw-video" autoplay muted loop playsinline>
+              <source src="assets/videos/real-world/trials/rm75_dispenser_press.mp4" type="video/mp4">
+            </video>
+            <div class="rw-video-label">RM75 · Dispenser Press — Zero-shot Sim-to-Real</div>
+          </div>
+          <div class="rw-video-item">
+            <video class="rw-video" autoplay muted loop playsinline>
+              <source src="assets/videos/real-world/trials/ac1_drawer_pull.mp4" type="video/mp4">
+            </video>
+            <div class="rw-video-label">AC1 · Drawer Pull — Zero-shot Sim-to-Real</div>
+          </div>
+          <div class="rw-video-item">
+            <video class="rw-video" autoplay muted loop playsinline>
+              <source src="assets/videos/real-world/trials/ac1_sliding_door.mp4" type="video/mp4">
+            </video>
+            <div class="rw-video-label">AC1 · Sliding Door — Zero-shot Sim-to-Real</div>
+          </div>
+          <div class="rw-video-item">
+            <video class="rw-video" autoplay muted loop playsinline>
+              <source src="assets/videos/real-world/trials/r1pro_microwave_close_02.mp4" type="video/mp4">
+            </video>
+            <div class="rw-video-label">R1Pro · Microwave Door Closing — Zero-shot Sim-to-Real</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="results-panel result-card result-card-red" id="tab-scaling">
+        <h3 class="subsection-title">Performance scaling with synthetic demonstrations</h3>
+        <p class="results-desc">
+          Increasing the task-specific synthetic dataset from 1 to 500 episodes produces a positive success-rate
+          trend. At 500 episodes, <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-VLA</span></span> exceeds
+          80% on each of the five scaling tasks shown below; constrained
+          actions such as drawer pulling and knob rotation continue to benefit from additional demonstrations.
+        </p>
+        <div class="scaling-grid two">
+          <figure class="scaling-figure">
+            <img src="assets/results/r1pro_data_scaling.webp?v=20260923-4" alt="R1Pro success rates as synthetic demonstrations increase from 1 to 500 episodes" loading="lazy" />
+            <figcaption>R1Pro · Bucket lifting, microwave closing, and toaster pressing</figcaption>
+          </figure>
+          <figure class="scaling-figure">
+            <img src="assets/results/ac1_data_scaling.webp?v=20260923-4" alt="AC1 success rates as synthetic demonstrations increase from 1 to 500 episodes" loading="lazy" />
+            <figcaption>AC1 · Drawer pulling and microwave knob rotation</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ GALLERY ════════════════════════════════════════════ -->
+<section class="gallery-section" id="gallery">
+  <div class="gallery-inner">
+    <div class="gallery-header">
+      <p class="section-eyebrow">06 Gallery</p>
+      <h2 class="section-title">Real Robot Trials</h2>
+    </div>
+    <div class="gallery-grid">
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/rm75_dispenser_press.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Dispenser Press</p>
+          <span class="gallery-card-tag">RM75 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/ac1_drawer_pull.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Drawer Pull</p>
+          <span class="gallery-card-tag">AC1 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/r1pro_bucket_lift.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Bucket Lift</p>
+          <span class="gallery-card-tag">R1Pro · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/rm75_microwave_close.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Microwave Door Close</p>
+          <span class="gallery-card-tag">RM75 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/ac1_microwave_knob.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Microwave Knob Rotation</p>
+          <span class="gallery-card-tag">AC1 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/r1pro_toaster_press.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Toaster Lever Press</p>
+          <span class="gallery-card-tag">R1Pro · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/rm75_sliding_door.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Sliding Door</p>
+          <span class="gallery-card-tag">RM75 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/ac1_toolbox.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Toolbox Opening</p>
+          <span class="gallery-card-tag">AC1 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/r1pro_microwave_close.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Microwave Door Close</p>
+          <span class="gallery-card-tag">R1Pro · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/rm75_toaster_press.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Toaster Lever Press</p>
+          <span class="gallery-card-tag">RM75 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/ac1_sliding_door.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Sliding Door</p>
+          <span class="gallery-card-tag">AC1 · Real Robot Trials</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-video-wrap">
+          <video class="gallery-video" autoplay muted loop playsinline preload="metadata">
+            <source src="assets/videos/real-world/trials/rm75_bucket_lift.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="gallery-card-meta">
+          <p class="gallery-card-title">Bucket Lift</p>
+          <span class="gallery-card-tag">RM75 · Real Robot Trials</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SUPPLEMENTARY VIDEO ═══════════════════════════════ -->
+<section class="results-video-section" aria-label="Supplementary Demonstration">
+  <div class="results-inner">
+    <video autoplay muted loop playsinline preload="metadata">
+      <source src="assets/videos/hero/compressed/hero-05-dataset-montage.mp4" type="video/mp4">
+    </video>
+  </div>
+</section>
+
+<!-- ═══ BIBTEX ═════════════════════════════════════════════ -->
+<section class="bibtex-section" id="citation">
+  <div class="bibtex-inner">
+    <div style="text-align:center;">
+      <h2 class="section-title">Citation</h2>
+    </div>
+    <div class="bibtex-content">
+      <pre class="bibtex-code" id="bibtex-text">@article{smart2026,
+  title={SMART: Zero-Shot Sim-to-Real Articulated Object Manipulation via Large-Scale Synthetic Pretraining},
+  author={Ao, Jicong and Jiang, Shuhan and Zhong, Yuling and Liu, Yanwen and Gao, Yuhan and Zhao, Jiangyuan and Zhang, Yang and Zhu, Shiqiang and Bai, Chenjia and Li, Xuelong},
+  year={2026},
+  url={https://arxiv.org/abs/2610.07652}
+}</pre>
+      <div class="bibtex-btn-wrap">
+        <button class="copy-bibtex-btn" onclick="copyBibtex()">Copy BibTeX</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-logo gamma">
+      <img src="assets/institutions/gamma-robotics.svg?v=20260923-4" alt="Gamma Robotics" />
+    </div>
+    <div class="footer-logo teleai">
+      <img src="teleai_logo.webp" alt="TeleAI — Institute of Artificial Intelligence, China Telecom" />
+    </div>
+  </div>
+</footer>
+
+<!-- ═══ SCRIPTS ════════════════════════════════════════════ -->
+<script>
+  // ── Hero video reel ─────────────────────────────────────
+  const heroVideo = document.getElementById('hero-video');
+  const heroVideoSources = [
+    'assets/videos/hero/compressed/hero-01-gamma-sim.mp4',
+    'assets/videos/hero/compressed/hero-02-asset-gallery.mp4',
+    'assets/videos/hero/compressed/hero-03-roller.mp4',
+    'assets/videos/hero/compressed/hero-04-gamma-hive.mp4',
+    'assets/videos/hero/compressed/hero-05-dataset-montage.mp4',
+    'assets/videos/hero/compressed/hero-06-skill-chain.mp4',
+    'assets/videos/hero/compressed/hero-07-sim-to-real.mp4',
+    'assets/videos/hero/compressed/hero-08-ac1-bucket.mp4'
+  ];
+  let heroVideoIndex = 0;
+  let heroVideoPreload;
+  const HERO_DEFAULT_PLAYBACK_RATE = 3;
+  const HERO_PLAYBACK_RATES = {
+    'assets/videos/hero/compressed/hero-01-gamma-sim.mp4': 8,
+    'assets/videos/hero/compressed/hero-03-roller.mp4': 2,
+    'assets/videos/hero/compressed/hero-04-gamma-hive.mp4': 2,
+    'assets/videos/hero/compressed/hero-05-dataset-montage.mp4': 1.5,
+    'assets/videos/hero/compressed/hero-07-sim-to-real.mp4': 2,
+    'assets/videos/hero/compressed/hero-08-ac1-bucket.mp4': 4
+  };
+  const HERO_PLAY_RATIOS = {
+    'assets/videos/hero/compressed/hero-01-gamma-sim.mp4': 0.85
+  };
+  let heroCutoffReached = false;
+
+  function getHeroPlaybackRate(source) {
+    return HERO_PLAYBACK_RATES[source] || HERO_DEFAULT_PLAYBACK_RATE;
+  }
+
+  function getHeroPlayRatio(source) {
+    return HERO_PLAY_RATIOS[source] || 1;
+  }
+
+  function preloadNextHeroVideo() {
+    heroVideoPreload = document.createElement('video');
+    heroVideoPreload.preload = 'auto';
+    heroVideoPreload.src = heroVideoSources[(heroVideoIndex + 1) % heroVideoSources.length];
+  }
+
+  function switchHeroVideo() {
+    heroVideo.classList.add('is-switching');
+    heroVideoIndex = (heroVideoIndex + 1) % heroVideoSources.length;
+    window.setTimeout(() => {
+      heroVideo.src = heroVideoSources[heroVideoIndex];
+      heroVideo.load();
+    }, 350);
+  }
+
+  heroVideo.playbackRate = HERO_DEFAULT_PLAYBACK_RATE;
+  heroVideo.addEventListener('loadedmetadata', () => {
+    heroCutoffReached = false;
+    heroVideo.currentTime = 0;
+    heroVideo.playbackRate = getHeroPlaybackRate(heroVideoSources[heroVideoIndex]);
+    heroVideo.classList.remove('is-switching');
+    heroVideo.play().catch(() => {});
+    preloadNextHeroVideo();
+  });
+  heroVideo.addEventListener('timeupdate', () => {
+    if (heroCutoffReached) return;
+    const source = heroVideoSources[heroVideoIndex];
+    const playRatio = getHeroPlayRatio(source);
+    if (playRatio < 1 && heroVideo.duration && heroVideo.currentTime >= heroVideo.duration * playRatio) {
+      heroCutoffReached = true;
+      switchHeroVideo();
+    }
+  });
+  heroVideo.addEventListener('ended', switchHeroVideo);
+  heroVideo.addEventListener('error', switchHeroVideo);
+  heroVideo.src = heroVideoSources[0];
+  heroVideo.load();
+
+  // ── Main demo scrubbing ─────────────────────────────────
+  const mainDemoVideo = document.getElementById('gamma-art-main-demo');
+  const mainDemoProgress = document.getElementById('gamma-art-main-demo-progress');
+  if (mainDemoVideo && mainDemoProgress) {
+    let isScrubbing = false;
+    let resumeAfterScrub = false;
+    let resumeWhenSeeked = false;
+    let suspendProgressSync = false;
+    let scrubFallbackTimer;
+
+    const updateMainDemoProgress = () => {
+      if (isScrubbing || suspendProgressSync) return;
+      if (!Number.isFinite(mainDemoVideo.duration) || mainDemoVideo.duration <= 0) return;
+      const percent = Math.min(100, Math.max(0, mainDemoVideo.currentTime / mainDemoVideo.duration * 100));
+      mainDemoProgress.value = percent;
+      mainDemoProgress.style.setProperty('--video-progress', percent + '%');
+    };
+
+    const resumeMainDemo = () => {
+      if (!resumeWhenSeeked) return;
+      resumeWhenSeeked = false;
+      mainDemoVideo.play().catch(() => {});
+    };
+
+    const seekMainDemo = () => {
+      if (!Number.isFinite(mainDemoVideo.duration) || mainDemoVideo.duration <= 0) return;
+      const percent = Math.min(100, Math.max(0, Number(mainDemoProgress.value)));
+      suspendProgressSync = true;
+      mainDemoProgress.style.setProperty('--video-progress', percent + '%');
+      mainDemoVideo.currentTime = mainDemoVideo.duration * percent / 100;
+      window.clearTimeout(scrubFallbackTimer);
+      scrubFallbackTimer = window.setTimeout(() => {
+        suspendProgressSync = false;
+        updateMainDemoProgress();
+        resumeMainDemo();
+      }, 300);
+    };
+
+    const beginScrub = () => {
+      if (isScrubbing) return;
+      isScrubbing = true;
+      resumeAfterScrub = !mainDemoVideo.paused && !mainDemoVideo.ended;
+      mainDemoVideo.pause();
+    };
+
+    const finishScrub = () => {
+      if (!isScrubbing) return;
+      isScrubbing = false;
+      resumeWhenSeeked = resumeAfterScrub;
+      resumeAfterScrub = false;
+      seekMainDemo();
+    };
+
+    mainDemoProgress.addEventListener('pointerdown', beginScrub);
+    mainDemoProgress.addEventListener('pointerup', finishScrub);
+    mainDemoProgress.addEventListener('pointercancel', finishScrub);
+    mainDemoProgress.addEventListener('keydown', beginScrub);
+    mainDemoProgress.addEventListener('keyup', finishScrub);
+    mainDemoProgress.addEventListener('input', () => {
+      beginScrub();
+      seekMainDemo();
+    });
+    mainDemoVideo.addEventListener('seeked', () => {
+      window.clearTimeout(scrubFallbackTimer);
+      suspendProgressSync = false;
+      updateMainDemoProgress();
+      resumeMainDemo();
+    });
+    mainDemoVideo.addEventListener('loadedmetadata', updateMainDemoProgress);
+    mainDemoVideo.addEventListener('durationchange', updateMainDemoProgress);
+    mainDemoVideo.addEventListener('timeupdate', updateMainDemoProgress);
+    updateMainDemoProgress();
+  }
+
+  // ── Navigation scroll behavior ──────────────────────────
+  const nav = document.getElementById('nav');
+  const navToggle = document.getElementById('nav-toggle');
+  const navChapters = document.getElementById('nav-chapters');
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      nav.classList.add('scrolled');
+    } else {
+      nav.classList.remove('scrolled');
+    }
+    updateActiveNav();
+  });
+
+  navToggle.addEventListener('click', () => {
+    navChapters.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', navChapters.classList.contains('open'));
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!nav.contains(e.target)) {
+      navChapters.classList.remove('open');
+    }
+  });
+
+  // ── Smooth scroll + close mobile menu on nav click ──────
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      navChapters.classList.remove('open');
+    });
+  });
+
+  // ── Active section highlight ─────────────────────────────
+  const sections = ['abstract', 'architecture', 'data-synthesis', 'dataset', 'results', 'gallery'];
+  const sectionEls = sections.map(id => document.getElementById(id));
+
+  function updateActiveNav() {
+    const scrollY = window.scrollY + 120;
+    let current = sections[0];
+    sectionEls.forEach((el, i) => {
+      if (el && el.offsetTop <= scrollY) {
+        current = sections[i];
+      }
+    });
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.toggle('active', link.dataset.section === current);
+    });
+  }
+
+  updateActiveNav();
+
+  // ── Articulated asset marquee ───────────────────────────
+  document.querySelectorAll('[data-asset-marquee]').forEach(assetMarquee => {
+    const assetTrack = assetMarquee.querySelector('.articulated-asset-track');
+    if (!assetTrack) return;
+    [...assetTrack.children].forEach(card => {
+      const clone = card.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      clone.querySelectorAll('img').forEach(img => img.setAttribute('alt', ''));
+      assetTrack.appendChild(clone);
+    });
+  });
+
+  // ── Interactive real-world results chart ────────────────
+  const realWorldChartGroups = [
+    {
+      platform: 'RM75',
+      tasks: [
+        { label: 'Bucket Handle Lifting', values: [73.3, 26.7, 26.7, 66.7] },
+        { label: 'Toaster Lever Pressing', values: [73.3, 46.7, 53.3, 80.0] },
+        { label: 'Dispenser Pressing', values: [60.0, 46.7, 46.7, 60.0] },
+        { label: 'Cabinet Door Sliding', values: [53.3, 13.3, 26.7, 40.0] },
+        { label: 'Microwave Door Closing', values: [66.7, 40.0, 60.0, 73.3] },
+        { label: 'Platform Average', values: [65.3, 34.7, 42.7, 64.0] }
+      ]
+    },
+    {
+      platform: 'AC-1',
+      tasks: [
+        { label: 'Drawer Pulling', values: [86.7, 40.0, 86.7, 93.3] },
+        { label: 'Microwave Knob Rotating', values: [86.7, 60.0, 53.3, 73.3] },
+        { label: 'Cabinet Door Sliding', values: [73.3, 46.7, 53.3, 53.3] },
+        { label: 'Toolbox Lid Flipping', values: [93.3, 53.3, 80.0, 80.0] },
+        { label: 'Platform Average', values: [85.0, 50.0, 68.3, 75.0] }
+      ]
+    },
+    {
+      platform: 'R1Pro',
+      tasks: [
+        { label: 'Toaster Lever Pressing', values: [86.7, 60.0, 66.7, 60.0] },
+        { label: 'Microwave Door Closing', values: [86.7, 86.7, 86.7, 80.0] },
+        { label: 'Bucket Handle Lifting', values: [80.0, 80.0, 73.3, 73.3] },
+        { label: 'Platform Average', values: [84.4, 75.6, 75.6, 71.1] },
+        { label: 'Overall Average', values: [76.7, 50.0, 59.4, 69.4] }
+      ]
+    }
+  ];
+
+  const realWorldChartSeries = [
+    { label: 'γ-Art-VLA', color: '#12355b' },
+    { label: 'γ-Art-VLA (w/o S1)', color: '#2f77b4' },
+    { label: 'π0.5', color: '#77add4' },
+    { label: 'γ-Art-VLA (Real)', color: '#d77b8a' }
+  ];
+
+  function createSvgElement(tagName, attributes = {}, text = '') {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tagName);
+    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+    if (text) node.textContent = text;
+    return node;
+  }
+
+  function renderRealWorldChart() {
+    const host = document.querySelector('[data-real-world-chart]');
+    if (!host) return;
+
+    const svg = createSvgElement('svg', {
+      viewBox: '0 0 2220 840',
+      'aria-hidden': 'true',
+      focusable: 'false',
+      preserveAspectRatio: 'xMidYMid meet'
+    });
+    const add = (tagName, attributes, text = '', parent = svg) => {
+      const node = createSvgElement(tagName, attributes, text);
+      parent.appendChild(node);
+      return node;
+    };
+
+    const gammaGradient = createSvgElement('linearGradient', {
+      id: 'gamma-suffix-gradient', x1: '0%', y1: '0%', x2: '100%', y2: '0%'
+    });
+    gammaGradient.appendChild(createSvgElement('stop', { offset: '0%', 'stop-color': '#611c87' }));
+    gammaGradient.appendChild(createSvgElement('stop', { offset: '50%', 'stop-color': '#3b82f6' }));
+    gammaGradient.appendChild(createSvgElement('stop', { offset: '100%', 'stop-color': '#ef4444' }));
+    const defs = createSvgElement('defs');
+    defs.appendChild(gammaGradient);
+    svg.appendChild(defs);
+
+    const plotLeft = 72;
+    const plotRight = 2172;
+    const plotBottom = 625;
+    const valueScale = 4.4;
+    const barWidth = 25;
+    const barStep = 26;
+    const barOffsets = [-39, -13, 13, 39];
+    const firstGroupCenter = 147;
+    const groupSpacing = (2086 - firstGroupCenter) / 15;
+    const flattenedGroups = realWorldChartGroups.flatMap(group => (
+      group.tasks.map(task => ({ platform: group.platform, ...task }))
+    ));
+
+    [185, 273, 361, 449, 537, 625].forEach(y => {
+      add('line', {
+        x1: plotLeft, y1: y, x2: plotRight, y2: y,
+        stroke: y === plotBottom ? '#64748b' : '#d7dde5',
+        'stroke-width': y === plotBottom ? 2 : 2
+      });
+    });
+    add('line', {
+      x1: plotLeft, y1: 170, x2: plotLeft, y2: plotBottom,
+      stroke: '#64748b', 'stroke-width': 2
+    });
+
+    const panelMeta = [
+      { name: 'RM75', start: 0, count: 6 },
+      { name: 'AC-1', start: 6, count: 5 },
+      { name: 'R1Pro', start: 11, count: 5 }
+    ];
+    panelMeta.forEach((panel, index) => {
+      const start = firstGroupCenter + panel.start * groupSpacing;
+      const end = firstGroupCenter + (panel.start + panel.count - 1) * groupSpacing;
+      add('text', {
+        x: (start + end) / 2, y: 137,
+        'text-anchor': 'middle', fill: '#263444',
+        'font-family': "'Arial Narrow', 'IBM Plex Sans', Arial, sans-serif",
+        'font-size': 38, 'font-weight': 700
+      }, panel.name);
+      if (index < panelMeta.length - 1) {
+        const boundary = end + groupSpacing / 2;
+        add('line', {
+          x1: boundary, y1: 185, x2: boundary, y2: plotBottom,
+          stroke: '#d7dde5', 'stroke-width': 2
+        });
+      }
+    });
+    add('line', {
+      x1: firstGroupCenter + (flattenedGroups.length - 1.5) * groupSpacing,
+      y1: 185,
+      x2: firstGroupCenter + (flattenedGroups.length - 1.5) * groupSpacing,
+      y2: plotBottom,
+      stroke: '#d7dde5',
+      'stroke-width': 2
+    });
+
+    add('text', {
+      x: 28, y: 405, transform: 'rotate(-90 28 405)',
+      'text-anchor': 'middle', fill: '#1f2937',
+      'font-family': "'Arial Narrow', 'IBM Plex Sans', Arial, sans-serif",
+      'font-size': 26
+    }, 'Success Rate (%)');
+    [0, 20, 40, 60, 80, 100].forEach(value => {
+      add('text', {
+        x: 100, y: 176 + valueScale * (100 - value) + 8,
+        'text-anchor': 'end', fill: '#1f2937',
+        'font-family': "'Arial Narrow', 'IBM Plex Sans', Arial, sans-serif",
+        'font-size': 22
+      }, value + '%');
+    });
+
+    const legendItems = [
+      { x: 818, labelX: 849, label: realWorldChartSeries[0].label, color: realWorldChartSeries[0].color },
+      { x: 973, labelX: 1004, label: realWorldChartSeries[1].label, color: realWorldChartSeries[1].color },
+      { x: 1209, labelX: 1240, label: realWorldChartSeries[2].label, color: realWorldChartSeries[2].color },
+      { x: 1310, labelX: 1341, label: realWorldChartSeries[3].label, color: realWorldChartSeries[3].color }
+    ];
+    add('rect', {
+      x: 793, y: 31, width: 706, height: 50, rx: 2,
+      fill: '#fff', stroke: '#d4dbe3', 'stroke-width': 2
+    });
+    legendItems.forEach(item => {
+      add('rect', { x: item.x, y: 47, width: 22, height: 12, rx: 1, fill: item.color });
+      const label = add('text', {
+        x: item.labelX, y: 59, fill: '#1f2937',
+        'font-family': "'Arial Narrow', 'IBM Plex Sans', Arial, sans-serif",
+        'font-size': 24, 'font-weight': item.label.includes('γ') ? 800 : 400
+      });
+      item.label.split('γ').forEach((part, index, parts) => {
+        if (part) {
+          label.appendChild(createSvgElement('tspan', { fill: 'url(#gamma-suffix-gradient)' }, part));
+        }
+        if (index < parts.length - 1) {
+          label.appendChild(createSvgElement('tspan', { fill: '#611c87' }, 'γ'));
+        }
+      });
+    });
+
+    flattenedGroups.forEach((task, groupIndex) => {
+      const groupCenter = firstGroupCenter + groupIndex * groupSpacing;
+      const labelX = groupIndex === 0 ? groupCenter + 22 : groupCenter;
+      add('text', {
+        x: labelX, y: 649,
+        transform: `rotate(-50 ${labelX} 649)`,
+        'text-anchor': 'end', fill: '#263444',
+        'font-family': "'Arial Narrow', 'IBM Plex Sans', Arial, sans-serif",
+        'font-size': 20
+      }, task.label);
+
+      task.values.forEach((value, seriesIndex) => {
+        const series = realWorldChartSeries[seriesIndex];
+        const center = groupCenter + barOffsets[seriesIndex];
+        const top = plotBottom - value * valueScale;
+        const bar = add('g', {
+          class: 'real-chart-bar',
+          tabindex: '0',
+          role: 'graphics-symbol',
+          style: `--bar-color:${series.color}`,
+          'aria-label': `${series.label}, ${task.platform} ${task.label}, ${value.toFixed(1)}%`
+        });
+        add('rect', {
+          class: 'real-chart-bar-shape',
+          x: center - barWidth / 2, y: top,
+          width: barWidth, height: Math.max(1, plotBottom - top),
+          fill: series.color
+        }, '', bar);
+        add('text', {
+          class: 'real-chart-bar-value',
+          x: center, y: top - 6,
+          transform: `rotate(-90 ${center} ${top - 6})`,
+          'text-anchor': 'start', fill: '#1f2937',
+          'font-family': "'Arial Narrow', 'IBM Plex Sans', Arial, sans-serif",
+          'font-size': 20
+        }, value.toFixed(1), bar);
+        add('rect', {
+          class: 'real-chart-bar-hit',
+          x: center - barStep / 2, y: 160,
+          width: barStep, height: plotBottom - 160,
+          fill: 'transparent', 'pointer-events': 'all'
+        }, '', bar);
+
+        const activate = () => {
+          host.querySelectorAll('.real-chart-bar.is-active').forEach(node => node.classList.remove('is-active'));
+          bar.classList.add('is-active');
+          host.classList.add('has-active');
+        };
+        const deactivate = () => {
+          bar.classList.remove('is-active');
+          if (!host.querySelector('.real-chart-bar.is-active')) host.classList.remove('has-active');
+        };
+        bar.addEventListener('mouseenter', activate);
+        bar.addEventListener('mouseleave', deactivate);
+        bar.addEventListener('focus', activate);
+        bar.addEventListener('blur', deactivate);
+      });
+    });
+
+    host.appendChild(svg);
+  }
+
+  renderRealWorldChart();
+
+  // ── Interactive dataset statistics ─────────────────────
+  const pieChartConfigs = [
+    {
+      key: 'robots',
+      target: 'pie-robots',
+      legend: 'legend-robots',
+      tooltip: 'pie-robots-tooltip',
+      center: 'pie-robots-center',
+      unit: 'trajectories',
+      total: 1004584,
+      defaultCenter: '<strong>1.0M+</strong><span>trajectories</span>',
+      data: [
+        { label: 'ARX AC One', value: 28.6, color: '#1d4ed8' },
+        { label: 'R1Pro', value: 25.1, color: '#2563eb' },
+        { label: 'Dual RM75', value: 20.1, color: '#3b82f6' },
+        { label: 'Dual Franka', value: 17.8, color: '#60a5fa' },
+        { label: 'Single Franka', value: 8.4, color: '#a5b4fc' }
+      ]
+    },
+    {
+      key: 'complexity',
+      target: 'pie-complexity',
+      legend: 'legend-complexity',
+      tooltip: 'pie-complexity-tooltip',
+      center: 'pie-complexity-center',
+      unit: 'trajectories',
+      total: 1004584,
+      defaultCenter: '<strong>44</strong><span>task types</span>',
+      data: [
+        { label: 'Atomic', value: 69.4, color: '#0f766e' },
+        { label: 'Composite', value: 20.9, color: '#14b8a6' },
+        { label: 'Long-horizon', value: 9.7, color: '#f97316' }
+      ]
+    }
+  ];
+
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const angle = (angleDeg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  }
+
+  function describePieSlice(cx, cy, r, startAngle, endAngle) {
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+    return ['M', cx, cy, 'L', start.x, start.y, 'A', r, r, 0, largeArcFlag, 0, end.x, end.y, 'Z'].join(' ');
+  }
+
+  function darken(hex, amount = 0.62) {
+    const raw = hex.replace('#', '');
+    const r = Math.round(parseInt(raw.slice(0, 2), 16) * amount);
+    const g = Math.round(parseInt(raw.slice(2, 4), 16) * amount);
+    const b = Math.round(parseInt(raw.slice(4, 6), 16) * amount);
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  function formatApprox(value) {
+    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+    if (value >= 1000) return Math.round(value / 1000).toLocaleString() + 'k';
+    return Math.round(value).toLocaleString();
+  }
+
+  function renderPieChart(config) {
+    const target = document.getElementById(config.target);
+    const legend = document.getElementById(config.legend);
+    const tooltip = document.getElementById(config.tooltip);
+    const center = document.getElementById(config.center);
+    if (!target || !legend || !tooltip || !center) return;
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('class', 'pie-svg');
+    svg.setAttribute('viewBox', '0 0 260 285');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', config.key + ' distribution');
+
+    const sideGroup = document.createElementNS(ns, 'g');
+    sideGroup.setAttribute('class', 'pie-side');
+    sideGroup.setAttribute('transform', 'translate(0 18)');
+    const topGroup = document.createElementNS(ns, 'g');
+    topGroup.setAttribute('class', 'pie-top');
+
+    let angle = 0;
+    config.data.forEach((slice, index) => {
+      const start = angle;
+      const end = angle + slice.value * 3.6;
+      const d = describePieSlice(130, 130, 104, start, end);
+      const side = document.createElementNS(ns, 'path');
+      side.setAttribute('d', d);
+      side.setAttribute('fill', darken(slice.color));
+      side.dataset.index = index;
+      sideGroup.appendChild(side);
+
+      const top = document.createElementNS(ns, 'path');
+      top.setAttribute('d', d);
+      top.setAttribute('fill', slice.color);
+      top.dataset.index = index;
+      top.setAttribute('tabindex', '0');
+      top.setAttribute('aria-label', slice.label + ', ' + slice.value + '%');
+      top.addEventListener('mouseenter', event => setActivePieSlice(config, index, event));
+      top.addEventListener('mousemove', event => positionPieTooltip(config, event));
+      top.addEventListener('focus', event => setActivePieSlice(config, index, event));
+      top.addEventListener('mouseleave', () => clearActivePieSlice(config));
+      top.addEventListener('blur', () => clearActivePieSlice(config));
+      topGroup.appendChild(top);
+      angle = end;
+    });
+
+    svg.appendChild(sideGroup);
+    svg.appendChild(topGroup);
+    target.innerHTML = '';
+    target.appendChild(svg);
+
+    legend.innerHTML = '';
+    config.data.forEach((slice, index) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'pie-legend-item';
+      item.dataset.index = index;
+      item.innerHTML = '<span class="pie-legend-dot" style="background:' + slice.color + '"></span><span>' + slice.label + ' · ' + slice.value + '%</span>';
+      item.addEventListener('mouseenter', event => setActivePieSlice(config, index, event, true));
+      item.addEventListener('focus', event => setActivePieSlice(config, index, event, true));
+      item.addEventListener('mouseleave', () => clearActivePieSlice(config));
+      item.addEventListener('blur', () => clearActivePieSlice(config));
+      legend.appendChild(item);
+    });
+
+    enablePieDrag(config);
+  }
+
+  function setActivePieSlice(config, index, event, fromLegend = false) {
+    const target = document.getElementById(config.target);
+    const legend = document.getElementById(config.legend);
+    const center = document.getElementById(config.center);
+    const tooltip = document.getElementById(config.tooltip);
+    const stage = target?.closest('.pie-stage');
+    if (!target || !legend || !center || !tooltip || !stage) return;
+
+    const slice = config.data[index];
+    const approx = config.total ? '≈' + formatApprox(config.total * slice.value / 100) + ' ' + config.unit : '';
+    center.innerHTML = '<strong>' + slice.value + '%</strong><span>' + slice.label + '</span>';
+    tooltip.innerHTML = '<strong>' + slice.label + '</strong><span>' + slice.value +
+      '% of <span class="gamma-term"><span class="gamma-letter">γ</span><span class="gamma-suffix">-Art-Data</span></span></span><span>' +
+      approx + '</span>';
+    tooltip.classList.add('show');
+
+    target.querySelectorAll('.pie-top path').forEach(path => {
+      const isActive = Number(path.dataset.index) === index;
+      path.classList.toggle('is-active', isActive);
+      path.classList.toggle('is-muted', !isActive);
+    });
+    legend.querySelectorAll('.pie-legend-item').forEach(item => {
+      item.classList.toggle('is-active', Number(item.dataset.index) === index);
+    });
+
+    if (fromLegend) {
+      const rect = stage.getBoundingClientRect();
+      tooltip.style.left = rect.width / 2 + 'px';
+      tooltip.style.top = rect.height * 0.24 + 'px';
+    } else if (event) {
+      positionPieTooltip(config, event);
+    }
+  }
+
+  function positionPieTooltip(config, event) {
+    const target = document.getElementById(config.target);
+    const tooltip = document.getElementById(config.tooltip);
+    const stage = target?.closest('.pie-stage');
+    if (!stage || !tooltip) return;
+    const rect = stage.getBoundingClientRect();
+    const left = Math.max(90, Math.min(rect.width - 90, event.clientX - rect.left));
+    const top = Math.max(58, Math.min(rect.height - 18, event.clientY - rect.top));
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+  }
+
+  function clearActivePieSlice(config) {
+    const target = document.getElementById(config.target);
+    const legend = document.getElementById(config.legend);
+    const center = document.getElementById(config.center);
+    const tooltip = document.getElementById(config.tooltip);
+    if (!target || !legend || !center || !tooltip) return;
+    center.innerHTML = config.defaultCenter;
+    tooltip.classList.remove('show');
+    target.querySelectorAll('.pie-top path').forEach(path => path.classList.remove('is-active', 'is-muted'));
+    legend.querySelectorAll('.pie-legend-item').forEach(item => item.classList.remove('is-active'));
+  }
+
+  function enablePieDrag(config) {
+    const target = document.getElementById(config.target);
+    const stage = target?.closest('.pie-stage');
+    if (!target || !stage) return;
+    const state = { dragging: false, startX: 0, startY: 0, startRz: -18, startRx: 58, rz: -18, rx: 58 };
+    const apply = () => {
+      target.style.setProperty('--rz', state.rz + 'deg');
+      target.style.setProperty('--rx', state.rx + 'deg');
+    };
+    stage.addEventListener('pointerdown', event => {
+      state.dragging = true;
+      state.startX = event.clientX;
+      state.startY = event.clientY;
+      state.startRz = state.rz;
+      state.startRx = state.rx;
+      stage.classList.add('dragging');
+      stage.setPointerCapture?.(event.pointerId);
+    });
+    stage.addEventListener('pointermove', event => {
+      if (!state.dragging) return;
+      state.rz = state.startRz + (event.clientX - state.startX) * 0.45;
+      state.rx = Math.max(42, Math.min(68, state.startRx - (event.clientY - state.startY) * 0.18));
+      apply();
+    });
+    ['pointerup', 'pointercancel', 'mouseleave'].forEach(type => {
+      stage.addEventListener(type, event => {
+        if (!state.dragging) return;
+        state.dragging = false;
+        stage.classList.remove('dragging');
+        stage.releasePointerCapture?.(event.pointerId);
+      });
+    });
+    apply();
+  }
+
+  pieChartConfigs.forEach(renderPieChart);
+
+  // ── Dataset figure lightbox ─────────────────────────────
+  const lightbox = document.createElement('div');
+  lightbox.className = 'figure-lightbox';
+  lightbox.innerHTML = '<button class="lightbox-close" aria-label="Close enlarged figure">×</button><div class="lightbox-content"><img alt="" /><p class="lightbox-caption"></p></div>';
+  document.body.appendChild(lightbox);
+
+  const lightboxImage = lightbox.querySelector('img');
+  const lightboxCaption = lightbox.querySelector('.lightbox-caption');
+  function openFigureLightbox(img) {
+    const figure = img.closest('.dataset-figure');
+    const caption = figure?.querySelector('figcaption')?.textContent || img.alt || 'Dataset statistic';
+    lightboxImage.src = img.src;
+    lightboxImage.alt = img.alt;
+    lightboxCaption.textContent = caption;
+    lightbox.classList.add('open');
+  }
+  function closeFigureLightbox() {
+    lightbox.classList.remove('open');
+    lightboxImage.removeAttribute('src');
+  }
+  document.querySelectorAll('.dataset-figure').forEach(figure => {
+    const img = figure.querySelector('img');
+    if (!img) return;
+    figure.setAttribute('tabindex', '0');
+    figure.addEventListener('click', () => openFigureLightbox(img));
+    figure.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openFigureLightbox(img);
+      }
+    });
+  });
+  lightbox.addEventListener('click', event => {
+    if (event.target === lightbox || event.target.classList.contains('lightbox-close')) closeFigureLightbox();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeFigureLightbox();
+  });
+
+  // ── BibTeX copy ──────────────────────────────────────────
+  function copyBibtex() {
+    const text = document.getElementById('bibtex-text').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.copy-bibtex-btn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy BibTeX'; }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
